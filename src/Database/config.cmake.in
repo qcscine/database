@@ -1,0 +1,33 @@
+# Dependencies
+find_package(Eigen3 3.3.1 REQUIRED NO_MODULE)
+
+if (NOT TARGET MongoDBCXX)
+  find_package(libmongocxx QUIET)
+  if(DEFINED LIBMONGOCXX_INCLUDE_DIRS)
+    add_library(MongoDBCXX INTERFACE IMPORTED)
+    set_target_properties(MongoDBCXX PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${LIBMONGOCXX_INCLUDE_DIRS};${LIBBSONCXX_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${LIBMONGOCXX_LIBRARIES};${LIBBSONCXX_LIBRARIES}"
+    )
+  else()
+    find_package(libmongocxx-static REQUIRED)
+    add_library(MongoDBCXX INTERFACE IMPORTED)
+    set_target_properties(MongoDBCXX PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${LIBMONGOCXX_STATIC_INCLUDE_DIRS};${LIBBSONCXX_STATIC_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${LIBMONGOCXX_STATIC_LIBRARIES};${LIBBSONCXX_STATIC_LIBRARIES}"
+    )
+  endif()
+endif()
+
+if(DEFINED SCINE_MARCH AND NOT "${SCINE_MARCH}" STREQUAL "@SCINE_MARCH@")
+  message(FATAL_ERROR "You are trying to use an installed version of the SCINE Database that was compiled with different -march flag values! Current march flags: ${SCINE_MARCH}, installed flags: @SCINE_MARCH@")
+endif()
+if (NOT DEFINED SCINE_MARCH)
+  set(SCINE_MARCH "@SCINE_MARCH@")
+endif()
+
+include(${CMAKE_CURRENT_LIST_DIR}/ScineDatabaseTargets.cmake)
+
+@PACKAGE_INIT@
+
+check_required_components(Database)

@@ -1,0 +1,83 @@
+
+set(DATABASE_PYTHON_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/CollectionPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ManagerPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ObjectPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/PropertyPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ElementaryStepPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ReactionPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ReactionSidePython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/CalculationPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/CompoundPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/StructurePython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ModelPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/MiscPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/PythonModule.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/LayoutPython.cpp
+)
+
+set(DATABASE_TEST_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/BoolPropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/CollectionTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/DenseMatrixPropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ElementaryStepTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ExceptionsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/NumberPropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ManagerTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ModelTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ObjectTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/PropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ReactionTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/SparseMatrixPropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/StringPropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/VectorPropertyTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/CalculationTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/CompoundTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/StructureTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/LevenshteinTest.cpp
+)
+
+set(DATABASE_MODULE_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/BoolProperty.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/BoolProperty.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Calculation.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Calculation.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Compound.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Compound.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/DenseMatrixProperty.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/DenseMatrixProperty.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ElementaryStep.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ElementaryStep.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/NumberProperty.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/NumberProperty.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Object.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Object.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Property.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Property.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Reaction.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ReactionSide.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/SparseMatrixProperty.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/SparseMatrixProperty.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/StringProperty.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/StringProperty.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/VectorProperty.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/VectorProperty.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Reaction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Model.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Model.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Structure.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Structure.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ValueCollection.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ValueCollection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Collection.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Collection.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Exceptions.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Id.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Id.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Manager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Manager.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Layout.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Misc.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Version.h
+)
