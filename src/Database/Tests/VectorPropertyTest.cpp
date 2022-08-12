@@ -35,7 +35,7 @@ class VectorPropertyTest : public Test {
     db.wipe();
   }
 };
-Credentials VectorPropertyTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_VectorPropertyTest");
+Credentials VectorPropertyTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_VectorPropertyTest");
 Manager VectorPropertyTest::db;
 
 TEST_F(VectorPropertyTest, Create1) {

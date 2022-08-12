@@ -7,6 +7,7 @@
 #include <Database/Collection.h>
 #include <Database/Exceptions.h>
 #include <Database/Manager.h>
+#include <Database/Objects/Calculation.h>
 #include <Database/Objects/Model.h>
 #include <Database/Objects/NumberProperty.h>
 #include <Database/Objects/Structure.h>
@@ -38,7 +39,7 @@ class StructureTest : public Test {
     db.wipe();
   }
 };
-Credentials StructureTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_StructureTest");
+Credentials StructureTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_StructureTest");
 Manager StructureTest::db;
 
 TEST_F(StructureTest, Create1) {
@@ -268,6 +269,8 @@ TEST_F(StructureTest, LabelFails2) {
   ASSERT_THROW(structure.getLabel(), Exceptions::MissingIDException);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(StructureTest, Compound) {
   // Setup
   Utils::AtomCollection atoms;
@@ -307,6 +310,48 @@ TEST_F(StructureTest, CompoundFails2) {
   ASSERT_THROW(structure.getCompound(), Exceptions::MissingIDException);
   ASSERT_THROW(structure.hasCompound(), Exceptions::MissingIDException);
   ASSERT_THROW(structure.clearCompound(), Exceptions::MissingIDException);
+}
+#pragma GCC diagnostic pop
+
+TEST_F(StructureTest, Aggregate) {
+  // Setup
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model("dft", "pbe", "def2-svp");
+  auto coll = db.getCollection("structures");
+  Structure structure = Structure::create(atoms, 0, 1, model, Structure::LABEL::MINIMUM_GUESS, coll);
+  ASSERT_TRUE(structure.hasId());
+  ASSERT_FALSE(structure.hasAggregate());
+  ID id2;
+  structure.setAggregate(id2);
+  ASSERT_TRUE(structure.hasAggregate());
+  ASSERT_EQ(id2, structure.getAggregate());
+  structure.clearAggregate();
+  ASSERT_FALSE(structure.hasAggregate());
+}
+
+TEST_F(StructureTest, AggregateFails1) {
+  Structure structure;
+  ID id;
+  ASSERT_THROW(structure.setAggregate(id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.getAggregate(), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.hasAggregate(), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.clearAggregate(), Exceptions::MissingLinkedCollectionException);
+}
+
+TEST_F(StructureTest, AggregateFails2) {
+  auto coll = db.getCollection("structures");
+  Structure structure;
+  structure.link(coll);
+  ID id;
+  ASSERT_THROW(structure.setAggregate(id), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.getAggregate(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.hasAggregate(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.clearAggregate(), Exceptions::MissingIDException);
 }
 
 TEST_F(StructureTest, Graph) {
@@ -588,6 +633,260 @@ TEST_F(StructureTest, PropertyFails2) {
   ASSERT_THROW(structure.getAllProperties(), Exceptions::MissingIDException);
   ASSERT_THROW(structure.setAllProperties({{"key", {id}}}), Exceptions::MissingIDException);
   ASSERT_THROW(structure.clearAllProperties(), Exceptions::MissingIDException);
+}
+
+TEST_F(StructureTest, Calculation1) {
+  // Setup
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model("dft", "pbe", "def2-svp");
+  auto coll = db.getCollection("structures");
+  Structure structure = Structure::create(atoms, 0, 1, model, Structure::LABEL::MINIMUM_GUESS, coll);
+  // Checks
+  ID id1, id2;
+  ASSERT_FALSE(structure.hasCalculation("hessian"));
+  ASSERT_FALSE(structure.hasCalculation(id1));
+  structure.setCalculation("hessian", id1);
+  ASSERT_TRUE(structure.hasCalculation("hessian"));
+  ASSERT_TRUE(structure.hasCalculation(id1));
+  ASSERT_FALSE(structure.hasCalculation(id2));
+  ASSERT_EQ(id1, structure.getCalculation("hessian"));
+  structure.addCalculation("hessian", id2);
+  ASSERT_TRUE(structure.hasCalculation(id2));
+  ASSERT_THROW(structure.getCalculation("hessian"), Exceptions::FieldException);
+  structure.removeCalculation("hessian", id1);
+  ASSERT_TRUE(structure.hasCalculation(id2));
+  ASSERT_FALSE(structure.hasCalculation(id1));
+}
+
+TEST_F(StructureTest, Calculation2) {
+  // Setup
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model("dft", "pbe", "def2-svp");
+  auto coll = db.getCollection("structures");
+  Structure structure = Structure::create(atoms, 0, 1, model, Structure::LABEL::MINIMUM_GUESS, coll);
+  // Checks
+  ID id1, id2, id3;
+  ASSERT_EQ(0, structure.hasCalculations("hessian"));
+  structure.setCalculations("hessian", {id1, id2});
+  ASSERT_EQ(2, structure.hasCalculations("hessian"));
+  ASSERT_EQ(id1, structure.getCalculations("hessian")[0]);
+  ASSERT_EQ(id2, structure.getCalculations("hessian")[1]);
+  structure.setCalculations("hessian", {id3});
+  ASSERT_EQ(id3, structure.getCalculations("hessian")[0]);
+  ASSERT_EQ(1, structure.hasCalculations("hessian"));
+  structure.clearCalculations("hessian");
+  ASSERT_EQ(0, structure.hasCalculations("hessian"));
+}
+
+TEST_F(StructureTest, Calculation3) {
+  // Setup
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model("dft", "pbe", "def2-svp");
+  auto coll = db.getCollection("structures");
+  Structure structure = Structure::create(atoms, 0, 1, model, Structure::LABEL::MINIMUM_GUESS, coll);
+  // Checks
+  ID id1, id2, id3, id4, id5, id6, id7, id8, id9;
+  std::map<std::string, std::vector<ID>> calc1 = {
+      {"electronic_energy", {id1, id2, id3}}, {"hessian", {id4, id5}}, {"gradients", {id8, id9}}};
+  std::map<std::string, std::vector<ID>> calc2 = {
+      {"mulliken_charges", {id6, id7}},
+      {"gradients", {id8, id9}},
+  };
+  ASSERT_EQ(0, structure.hasCalculations("electronic_energy"));
+  ASSERT_EQ(0, structure.hasCalculations("mulliken_charges"));
+  ASSERT_EQ(0, structure.hasCalculations("hessian"));
+  ASSERT_EQ(0, structure.hasCalculations("gradients"));
+  structure.setAllCalculations(calc1);
+  auto ret1 = structure.getAllCalculations();
+  ASSERT_EQ(calc1.at("electronic_energy")[0], ret1.at("electronic_energy")[0]);
+  ASSERT_EQ(calc1.at("electronic_energy")[2], ret1.at("electronic_energy")[2]);
+  ASSERT_EQ(calc1.at("hessian")[0], ret1.at("hessian")[0]);
+  ASSERT_EQ(calc1.at("hessian")[1], ret1.at("hessian")[1]);
+  ASSERT_EQ(calc1.at("gradients")[0], ret1.at("gradients")[0]);
+  structure.setAllCalculations(calc2);
+  auto ret2 = structure.getAllCalculations();
+  ASSERT_EQ(calc2.at("mulliken_charges")[0], ret2.at("mulliken_charges")[0]);
+  ASSERT_EQ(calc2.at("mulliken_charges")[1], ret2.at("mulliken_charges")[1]);
+  ASSERT_EQ(calc2.at("gradients")[0], ret2.at("gradients")[0]);
+  ASSERT_EQ(calc2.at("gradients")[1], ret2.at("gradients")[1]);
+  structure.clearAllCalculations();
+  ASSERT_EQ(0, structure.hasCalculations("electronic_energy"));
+  ASSERT_EQ(0, structure.hasCalculations("mulliken_charges"));
+  ASSERT_EQ(0, structure.hasCalculations("hessian"));
+  ASSERT_EQ(0, structure.hasCalculations("gradients"));
+}
+
+TEST_F(StructureTest, Calculation4) {
+  // Setup
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model1("dft", "pbe", "def2-svp");
+  model1.program = "serenity";
+  Model model2("am1", "am1", "");
+  model2.program = "sparrow";
+  auto structures = db.getCollection("structures");
+  auto calculations = db.getCollection("calculations");
+  Structure structure = Structure::create(atoms, 0, 1, model1, Structure::LABEL::MINIMUM_GUESS, structures);
+  const ID& id = structure.id();
+  Calculation::Job job("test");
+  Calculation c1 = Calculation::create(model1, job, {id}, calculations);
+  Calculation c2 = Calculation::create(model2, job, {id}, calculations);
+  Calculation c3 = Calculation::create(model2, job, {id}, calculations);
+  structure.addCalculation(job.order, c1.id());
+  structure.addCalculation(job.order, c2.id());
+  structure.addCalculation(job.order, c3.id());
+  // Checks
+  Model none("dft", "sdfasdf", "asdf");
+  auto ret0 = structure.queryCalculations(job.order, none, calculations);
+  EXPECT_EQ(0, ret0.size());
+  auto ret1 = structure.queryCalculations(job.order, model1, calculations);
+  EXPECT_EQ(1, ret1.size());
+  auto ret2 = structure.queryCalculations(job.order, model2, calculations);
+  EXPECT_EQ(2, ret2.size());
+  Model anydft("dft", "any", "any");
+  auto ret3 = structure.queryCalculations(job.order, anydft, calculations);
+  EXPECT_EQ(1, ret3.size());
+  Model any("any", "any", "any");
+  auto ret4 = structure.queryCalculations(job.order, any, calculations);
+  EXPECT_EQ(1, ret4.size());
+  auto ret5 = structure.queryCalculations("none_existing_key", none, calculations);
+  EXPECT_EQ(0, ret5.size());
+}
+
+TEST_F(StructureTest, Calculation5) {
+  // Setup
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model1("dft", "pbe", "def2-svp");
+  model1.program = "serenity";
+  Model model2("am1", "am1", "");
+  model2.program = "sparrow";
+  auto structures = db.getCollection("structures");
+  auto calculations = db.getCollection("calculations");
+  Structure structure = Structure::create(atoms, 0, 1, model1, Structure::LABEL::MINIMUM_GUESS, structures);
+  const ID& id = structure.id();
+  Calculation::Job job("test");
+  Calculation c1 = Calculation::create(model1, job, {id}, calculations);
+  Calculation c2 = Calculation::create(model2, job, {id}, calculations);
+  Calculation c3 = Calculation::create(model2, job, {id}, calculations);
+  structure.addCalculations(job.order, {c1.id(), c2.id(), c3.id()});
+  // Checks
+  Model none("dft", "sdfasdf", "asdf");
+  auto ret0 = structure.queryCalculations(job.order, none, calculations);
+  EXPECT_EQ(0, ret0.size());
+  auto ret1 = structure.queryCalculations(job.order, model1, calculations);
+  EXPECT_EQ(1, ret1.size());
+  auto ret2 = structure.queryCalculations(job.order, model2, calculations);
+  EXPECT_EQ(2, ret2.size());
+  Model anydft("dft", "any", "any");
+  auto ret3 = structure.queryCalculations(job.order, anydft, calculations);
+  EXPECT_EQ(1, ret3.size());
+  Model any("any", "any", "any");
+  auto ret4 = structure.queryCalculations(job.order, any, calculations);
+  EXPECT_EQ(1, ret4.size());
+  auto ret5 = structure.queryCalculations("none_existing_key", none, calculations);
+  EXPECT_EQ(0, ret5.size());
+}
+
+TEST_F(StructureTest, CalculationFails1) {
+  auto coll = db.getCollection("structures");
+  Structure structure;
+  ID id;
+  Model model("dft", "pbe", "def2-svp");
+  ASSERT_THROW(structure.hasCalculation("key"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.hasCalculation(id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.getCalculation("key"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.setCalculation("key", id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.addCalculation("key", id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.removeCalculation("key", id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.setCalculations("key", {}), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.getCalculations("key"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.hasCalculations("key"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.clearCalculations("key"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.queryCalculations("key", model, coll), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.getAllCalculations(), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.setAllCalculations({{"key", {id}}}), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(structure.clearAllCalculations(), Exceptions::MissingLinkedCollectionException);
+}
+
+TEST_F(StructureTest, CalculationFails2) {
+  auto coll = db.getCollection("structures");
+  Structure structure;
+  structure.link(coll);
+  ID id;
+  Model model("dft", "pbe", "def2-svp");
+  ASSERT_THROW(structure.hasCalculation("key"), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.hasCalculation(id), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.getCalculation("key"), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.setCalculation("key", id), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.addCalculation("key", id), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.removeCalculation("key", id), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.setCalculations("key", {}), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.getCalculations("key"), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.hasCalculations("key"), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.clearCalculations("key"), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.queryCalculations("key", model, coll), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.getAllCalculations(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.setAllCalculations({{"key", {id}}}), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.clearAllCalculations(), Exceptions::MissingIDException);
+}
+
+TEST_F(StructureTest, IsDuplicateOf) {
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model1("dft", "pbe", "def2-svp");
+  model1.program = "serenity";
+  auto structures = db.getCollection("structures");
+  Structure structure = Structure::create(atoms, 0, 1, model1, Structure::LABEL::MINIMUM_GUESS, structures);
+
+  ID id;
+  ID id2;
+
+  ASSERT_THROW(structure.isDuplicateOf(), Exceptions::UnpopulatedObjectException);
+  structure.setAsDuplicateOf(id);
+  ASSERT_TRUE(structure.isDuplicateOf() == id);
+  structure.setAsDuplicateOf(id2);
+  ASSERT_TRUE(structure.isDuplicateOf() == id2);
+  structure.clearDuplicateID();
+  ASSERT_THROW(structure.isDuplicateOf(), Exceptions::UnpopulatedObjectException);
+}
+
+TEST_F(StructureTest, IsDuplicateOfFailuresID) {
+  auto coll = db.getCollection("structures");
+  Structure structure;
+  structure.link(coll);
+  ID id;
+
+  ASSERT_THROW(structure.isDuplicateOf(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.clearDuplicateID(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.setAsDuplicateOf(id), Exceptions::MissingIDException);
 }
 
 } /* namespace Tests */

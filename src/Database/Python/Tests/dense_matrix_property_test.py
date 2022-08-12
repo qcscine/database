@@ -15,7 +15,8 @@ class DenseMatrixPropertyTest(unittest.TestCase):
     def setUp(self):
         self.manager = db.Manager()
         self.manager.credentials.hostname = os.environ.get(
-            'TEST_MONGO_DB_IP') or '127.0.0.1'
+            'TEST_MONGO_DB_IP', '127.0.0.1')
+        self.manager.credentials.port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         self.manager.credentials.database_name = "unittest_db_DenseMatrixPropertyTest"
         self.manager.connect()
         self.manager.init()

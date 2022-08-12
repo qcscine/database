@@ -16,7 +16,7 @@ namespace Exceptions {
 
 /**
  * @class DuplicateIDException
- * @brief A exception to throw if a given ID is already present, and this is not expected.
+ * @brief An exception to throw if a given ID is already present, and this is not expected.
  */
 class DuplicateIDException : public std::exception {
  public:
@@ -104,7 +104,7 @@ class IDNotFoundException : public std::exception {
 
 /**
  * @class UnpopulatedObjectException Exceptions.h
- * @brief A exception to throw a DB object is not populated.
+ * @brief An exception to throw a DB object is not populated.
  */
 class UnpopulatedObjectException : public std::exception {
  public:
@@ -115,7 +115,7 @@ class UnpopulatedObjectException : public std::exception {
 
 /**
  * @class ObjectTypeMismatchException Exceptions.h
- * @brief A exception to throw if the Object type requested and found do not match.
+ * @brief An exception to throw if the Object type requested and found do not match.
  */
 class ObjectTypeMismatchException : public std::exception {
  public:
@@ -126,7 +126,7 @@ class ObjectTypeMismatchException : public std::exception {
 
 /**
  * @class MissingIdOrField Exceptions.h
- * @brief A exception to throw if the Object type requested and found do not match.
+ * @brief An exception to throw if the Object type requested and found do not match.
  */
 class MissingIdOrField : public std::exception {
  public:
@@ -137,7 +137,7 @@ class MissingIdOrField : public std::exception {
 
 /**
  * @class FieldException
- * @brief A exception to throw if a restriction placed on a particular field in the database is not fulfilled.
+ * @brief An exception to throw if a restriction placed on a particular field in the database is not fulfilled.
  */
 class FieldException : public std::exception {
  public:
@@ -147,8 +147,8 @@ class FieldException : public std::exception {
 };
 
 /**
- * @class FieldException
- * @brief A exception to throw if the wrapper and server version mismatch.
+ * @class VersionMismatch
+ * @brief An exception to throw if the wrapper and server version mismatch.
  */
 class VersionMismatch : public std::exception {
  public:

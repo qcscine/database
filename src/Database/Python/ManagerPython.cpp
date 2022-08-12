@@ -9,6 +9,7 @@
 #include <Database/Manager.h>
 #include <Utils/Pybind.h>
 #include <pybind11/chrono.h>
+#include <pybind11/operators.h>
 
 using namespace Scine::Database;
 
@@ -25,6 +26,8 @@ void init_credentials(pybind11::module& m) {
   credentials.def_readwrite("password", &Credentials::password);
   credentials.def_readwrite("auth_database", &Credentials::authDatabase);
   credentials.def_readwrite("authDatabase", &Credentials::authDatabase);
+  credentials.def(pybind11::self == pybind11::self);
+  credentials.def(pybind11::self != pybind11::self);
 }
 
 void init_manager(pybind11::class_<Manager>& manager) {

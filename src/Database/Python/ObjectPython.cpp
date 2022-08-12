@@ -52,6 +52,15 @@ void init_id(pybind11::module& m) {
       "__le__", [](const ID& a, const ID& b) { return a <= b; }, pybind11::is_operator());
   id.def(
       "__le__", [](const ID& a, const std::string& b) { return a.string() <= b; }, pybind11::is_operator());
+  id.def(pybind11::pickle(
+      [](const ID& id) { //__getstate__
+        return id.string();
+      },
+      [](const std::string& s) { // __setstate__
+        /* Create a new C++ instance */
+        ID id(s);
+        return id;
+      }));
 }
 
 void init_object(pybind11::class_<Object>& object) {

@@ -22,7 +22,9 @@ class AtomCollection;
 
 namespace Database {
 
+class Calculation;
 class Collection;
+class Manager;
 class Model;
 
 /**
@@ -185,20 +187,49 @@ class Structure : public Object {
    */
   void setMultiplicity(int multiplicity) const;
   /**
+   * @brief Get linked aggregate-id
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @throws MissingIdOrField Thrown if the structure does not have a linked aggregate ID.
+   * @return ID The ID of the linked aggregate.
+   */
+  ID getAggregate() const;
+  /**
+   * @brief Links the structure to a aggregate.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param id The new ID to link.
+   */
+  void setAggregate(const ID& id) const;
+  /**
+   * @brief Checks if the structure is linked to a aggregate.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @return true  If the structure is linked to a aggregate.
+   * @return false If the structure is not linked to a aggregate.
+   */
+  bool hasAggregate() const;
+  /**
+   * @brief Removes the current link to aggregate.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   */
+  void clearAggregate() const;
+  /**
    * @brief Get linked compound-id
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @throws MissingIdOrField Thrown if the structure does not have a linked compound ID.
    * @return ID The ID of the linked compound.
    */
-  ID getCompound() const;
+  [[deprecated("'Compound' members are deprecated since v1.1.0, use 'Aggregate' instead.")]] ID getCompound() const;
   /**
    * @brief Links the structure to a compound.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The new ID to link.
    */
-  void setCompound(const ID& id) const;
+  [[deprecated("'Compound' members are deprecated since v1.1.0, use 'Aggregate' instead.")]] void setCompound(const ID& id) const;
   /**
    * @brief Checks if the structure is linked to a compound.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
@@ -206,13 +237,13 @@ class Structure : public Object {
    * @return true  If the structure is linked to a compound.
    * @return false If the structure is not linked to a compound.
    */
-  bool hasCompound() const;
+  [[deprecated("'Compound' members are deprecated since v1.1.0, use 'Aggregate' instead.")]] bool hasCompound() const;
   /**
    * @brief Removes the current link to compound.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    */
-  void clearCompound() const;
+  [[deprecated("'Compound' members are deprecated since v1.1.0, use 'Aggregate' instead.")]] void clearCompound() const;
   /**
    * @brief Checks if a single property is given under the specified key.
    *
@@ -365,6 +396,165 @@ class Structure : public Object {
    */
   void clearAllProperties() const;
   /**
+   * @brief Checks if a single Calculation is given under the specified key.
+   *
+   * This function is part of the one vs. many split in accessing calculations
+   * in a given Structure.
+   * In general all calculations with the same key (but different model)
+   * are stored in the same list.
+   * In the special case of a calculation that is model independent
+   * and thus only one of version of the calculation exists, this function and
+   * others expecting a single calculation and working on a single
+   * calculation can be used.
+   *
+   * @param key The property key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @return true  If exactly one calculation is registered under the given key
+   * @return false If exactly none or more than one calculation is registered under the given key
+   */
+  bool hasCalculation(const std::string& key) const;
+  /**
+   * @brief Checks if a specific calculation (id) is listed in this structure.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param id The ID to check for.
+   * @return true  If the given ID is present in the structure.
+   * @return false If the given ID is not present in the structure.
+   */
+  bool hasCalculation(const ID& id) const;
+  /**
+   * @brief Get a single calculation.
+   *
+   * This function is part of the one vs. many split in accessing calculations
+   * in a given Structure.
+   * In general all calculations with the same key (but different model)
+   * are stored in the same list.
+   * In the special case of a calculation that is model independent
+   * and thus only one of version of the calculation exists, this function and
+   * others expecting a single calculation and working on a single
+   * calculation can be used.
+   *
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @throws FieldException Thrown if the calculation-list has more than one entry.
+   * @param key The key of the calculation.
+   * @return ID The calculation's ID.
+   */
+  ID getCalculation(const std::string& key) const;
+  /**
+   * @brief Set/reset the calculation-list to a single one for a given key.
+   *
+   * This function is part of the one vs. many split in accessing calculations
+   * in a given Structure.
+   * In general all calculations with the same key (but different model)
+   * are stored in the same list.
+   * In the special case of a calculation that is model independent
+   * and thus only one of version of the calculation exists, this function and
+   * others expecting a single calculation and working on a single
+   * calculation can be used.
+   *
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the calculation.
+   * @param id  The new calculation-id.
+   */
+  void setCalculation(const std::string& key, const ID& id) const;
+  /**
+   * @brief Add a single calculation to a given key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the calculation.
+   * @param id  The ID of the calculation to add.
+   */
+  void addCalculation(const std::string& key, const ID& id) const;
+  /**
+   * @brief Adds multiple calculations to a given key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the calculation.
+   * @param ids  The vectors of IDs of the calculations to add.
+   */
+  void addCalculations(const std::string& key, const std::vector<ID>& ids) const;
+  /**
+   * @brief Removes a single calculation from a given key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the calculation.
+   * @param id  The ID of the calculation to remove.
+   */
+  void removeCalculation(const std::string& key, const ID& id) const;
+  /**
+   * @brief Set/replace all calculations of a given key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the calculations.
+   * @param ids A vector of IDs.
+   */
+  void setCalculations(const std::string& key, const std::vector<ID>& ids) const;
+  /**
+   * @brief Get all calculations stored under one key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key to be used.
+   * @return std::vector<ID> The list of calculations.
+   */
+  std::vector<ID> getCalculations(const std::string& key) const;
+  /**
+   * @brief Returns all calculations fitting a given model query that are
+   *        presently stored under the given key.
+   *
+   * All fields of the given model that are set to "any" will be ignored
+   * in the query. Thus all occurrences will be included in the returned
+   * vector.
+   *
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key              The key to check.
+   * @param model            The model query.
+   * @param collection       The collection to find the calculations in.
+   * @return std::vector<ID> The resulting list of calculations.
+   */
+  std::vector<ID> queryCalculations(const std::string& key, const Model& model, std::shared_ptr<Collection> collection) const;
+  /**
+   * @brief Checks if calculations are present under a given key.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key to check the number of calculations for.
+   * @return int The number of calculations stored under the given key.
+   */
+  int hasCalculations(const std::string& key) const;
+  /**
+   * @brief Clears all calculations stored under the given key.
+   *
+   * Also removes the key.
+   *
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key to remove including all its linked calculations.
+   */
+  void clearCalculations(const std::string& key) const;
+  /**
+   * @brief Get all stores calculations as a complete map.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @return std::map<std::string, std::vector<ID>> The map of all calculations.
+   */
+  std::map<std::string, std::vector<ID>> getAllCalculations() const;
+  /**
+   * @brief Set/Replace all calculations.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param calculations The new mao of calculations.
+   */
+  void setAllCalculations(const std::map<std::string, std::vector<ID>>& calculations) const;
+  /**
+   * @brief Removes all stored calculations.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   */
+  void clearAllCalculations() const;
+  /**
    * @brief Get a graph representation of the structure.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
@@ -451,6 +641,27 @@ class Structure : public Object {
    * @throws MissingIDException Thrown if the object does not have an ID.
    */
   void clearComment() const;
+  /**
+   * @brief Get the ID of the structure, this structure is a duplicate of.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @throw UnpopulatedObjectException Thrown if the "duplicate_of" field is empty.
+   * @return The ID of the unique structure.
+   */
+  ID isDuplicateOf() const;
+  /**
+   * @brief Set the ID in the field "duplicate_of", i.e., the structure ID this structure is a duplicate of.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param id The ID of the non-duplicate structure.
+   */
+  void setAsDuplicateOf(const ID& id) const;
+  /**
+   * @brief Clear the "duplicate_of" field.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   */
+  void clearDuplicateID() const;
 };
 
 } /* namespace Database */

@@ -1,6 +1,26 @@
 Changelog
 =========
 
+Release 1.1.0
+-------------
+
+Changes (require updates):
+ - Structures are now sorted into `aggregates` which can be Compounds
+   or Flasks
+ - Update Reactions to connect Flasks and/or Compounds
+    - `lhs` and `rhs` are expanded with a `type` attribute
+
+Additions (backwards compatible):
+ - Add atom index maps to elementary steps
+ - Add Flasks, a new type of aggregate for stable non-bonded complexes
+ - Add collection for Flasks
+ - Add aggregate related functions to the Structure class
+
+Deprecated:
+ - All Compound related functions of the Structure class are now deprecated
+   (they point to the new aggregate fields)
+
+
 Release 1.0.0
 -------------
 

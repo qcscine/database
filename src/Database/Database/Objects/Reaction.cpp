@@ -13,7 +13,6 @@
 #include "Database/Objects/Compound.h"
 #include "Database/Objects/ElementaryStep.h"
 #include "Database/Objects/Impl/Fields.h"
-#include <Database/Objects/ReactionSide.h>
 /* External Includes */
 #include <bsoncxx/builder/stream/document.hpp>
 #include <mongocxx/collection.hpp>
@@ -29,15 +28,46 @@ namespace Scine {
 namespace Database {
 namespace {
 
-ID createImpl(const std::vector<ID>& lhs, const std::vector<ID>& rhs, const Object::CollectionPtr& collection) {
-  // Build atom array
+ID createImpl(const std::vector<ID>& lhs, const std::vector<ID>& rhs, const Object::CollectionPtr& collection,
+              const std::vector<COMPOUND_OR_FLASK>& lhsTypes, const std::vector<COMPOUND_OR_FLASK>& rhsTypes) {
+  // Build LHS and RHS arrays
+  auto lTypes = lhsTypes;
+  if (lhsTypes.size() == 0) {
+    lTypes.reserve(lhs.size());
+    for (unsigned int i = 0; i < lhs.size(); i++) {
+      lTypes.push_back(COMPOUND_OR_FLASK::COMPOUND);
+    }
+  }
+  auto rTypes = rhsTypes;
+  if (rhsTypes.size() == 0) {
+    rTypes.reserve(rhs.size());
+    for (unsigned int i = 0; i < rhs.size(); i++) {
+      rTypes.push_back(COMPOUND_OR_FLASK::COMPOUND);
+    }
+  }
+  if (lhs.size() != lTypes.size()) {
+    throw std::runtime_error("Number of reagents and number of reagent types do not match.");
+  }
+  if (rhs.size() != rTypes.size()) {
+    throw std::runtime_error("Number of reagents and number of reagent types do not match.");
+  }
   bsoncxx::builder::basic::array lhsArray;
-  for (const auto& id : lhs) {
-    lhsArray.append(id.bsoncxx());
+  for (unsigned int i = 0; i < lhs.size(); i++) {
+    // clang-format off
+    auto doc = document{} << "id" << lhs[i].bsoncxx()
+                          << "type" << EnumMaps::reactant2str.at(lTypes[i])
+                          << finalize;
+    // clang-format on
+    lhsArray.append(doc);
   }
   bsoncxx::builder::basic::array rhsArray;
-  for (const auto& id : rhs) {
-    rhsArray.append(id.bsoncxx());
+  for (unsigned int i = 0; i < rhs.size(); i++) {
+    // clang-format off
+    auto doc = document{} << "id" << rhs[i].bsoncxx()
+                          << "type" << EnumMaps::reactant2str.at(rTypes[i])
+                          << finalize;
+    // clang-format on
+    rhsArray.append(doc);
   }
 
   auto now = bsoncxx::types::b_date(std::chrono::system_clock::now());
@@ -60,20 +90,22 @@ ID createImpl(const std::vector<ID>& lhs, const std::vector<ID>& rhs, const Obje
 
 constexpr const char* Reaction::objecttype;
 
-Reaction Reaction::create(const std::vector<ID>& lhs, const std::vector<ID>& rhs, const CollectionPtr& collection) {
+Reaction Reaction::create(const std::vector<ID>& lhs, const std::vector<ID>& rhs, const CollectionPtr& collection,
+                          const std::vector<COMPOUND_OR_FLASK>& lhsTypes, const std::vector<COMPOUND_OR_FLASK>& rhsTypes) {
   if (!collection) {
     throw Exceptions::MissingCollectionException();
   }
 
-  return {createImpl(lhs, rhs, collection), collection};
+  return {createImpl(lhs, rhs, collection, lhsTypes, rhsTypes), collection};
 }
 
-ID Reaction::create(const std::vector<ID>& lhs, const std::vector<ID>& rhs) {
+ID Reaction::create(const std::vector<ID>& lhs, const std::vector<ID>& rhs,
+                    const std::vector<COMPOUND_OR_FLASK>& lhsTypes, const std::vector<COMPOUND_OR_FLASK>& rhsTypes) {
   if (!_collection) {
     throw Exceptions::MissingLinkedCollectionException();
   }
 
-  this->_id = std::make_unique<ID>(createImpl(lhs, rhs, _collection));
+  this->_id = std::make_unique<ID>(createImpl(lhs, rhs, _collection, lhsTypes, rhsTypes));
   return *(this->_id);
 }
 
@@ -174,15 +206,18 @@ SIDE Reaction::hasReactant(const ID& id) const {
   return SIDE::NONE;
 }
 
-void Reaction::addReactant(const ID& id, const SIDE side) const {
+void Reaction::addReactant(const ID& id, const SIDE side, COMPOUND_OR_FLASK type) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   if (side == SIDE::BOTH || side == SIDE::LHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
     // clang-format off
     auto update = document{} << "$push" << open_document
-                               << "lhs" << id.bsoncxx()
+                               << "lhs" << open_document
+                                 << "id" << id.bsoncxx()
+                                 << "type" << EnumMaps::reactant2str.at(type)
                                << close_document
+                             << close_document
                              << "$currentDate" << open_document
                                << "_lastmodified" << true
                                << close_document
@@ -194,8 +229,11 @@ void Reaction::addReactant(const ID& id, const SIDE side) const {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
     // clang-format off
     auto update = document{} << "$push" << open_document
-                               << "rhs" << id.bsoncxx()
+                               << "rhs" << open_document
+                                 << "id" << id.bsoncxx()
+                                 << "type" << EnumMaps::reactant2str.at(type)
                                << close_document
+                             << close_document
                              << "$currentDate" << open_document
                                << "_lastmodified" << true
                                << close_document
@@ -212,7 +250,7 @@ void Reaction::removeReactant(const ID& id, const SIDE side) const {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
     // clang-format off
     auto update = document{} << "$pull" << open_document
-                               << "lhs" << id.bsoncxx()
+                               << "lhs" << open_document << "id" << id.bsoncxx() << close_document
                                << close_document
                              << "$currentDate" << open_document
                                << "_lastmodified" << true
@@ -225,7 +263,7 @@ void Reaction::removeReactant(const ID& id, const SIDE side) const {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
     // clang-format off
     auto update = document{} << "$pull" << open_document
-                               << "rhs" << id.bsoncxx()
+                               << "rhs" << open_document << "id" << id.bsoncxx() << close_document
                                << close_document
                              << "$currentDate" << open_document
                                << "_lastmodified" << true
@@ -236,12 +274,27 @@ void Reaction::removeReactant(const ID& id, const SIDE side) const {
   }
 }
 
-void Reaction::setReactants(const std::vector<ID>& ids, const SIDE side) const {
+void Reaction::setReactants(const std::vector<ID>& ids, const SIDE side, const std::vector<COMPOUND_OR_FLASK>& types) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
+  auto ts = types;
+  if (types.size() == 0) {
+    ts.reserve(ids.size());
+    for (unsigned int i = 0; i < ids.size(); i++) {
+      ts.push_back(COMPOUND_OR_FLASK::COMPOUND);
+    }
+  }
+  if (ids.size() != ts.size()) {
+    throw std::runtime_error("Number of reagents and number of reagent types do not match.");
+  }
   bsoncxx::builder::basic::array array;
-  for (const auto& id : ids) {
-    array.append(id.bsoncxx());
+  for (unsigned int i = 0; i < ids.size(); i++) {
+    // clang-format off
+    auto doc = document{} << "id" << ids[i].bsoncxx()
+                          << "type" << EnumMaps::reactant2str.at(ts[i])
+                          << finalize;
+    // clang-format on
+    array.append(doc.view());
   }
   if (side == SIDE::BOTH || side == SIDE::LHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -295,32 +348,96 @@ std::tuple<std::vector<ID>, std::vector<ID>> Reaction::getReactants(const SIDE s
     throw Exceptions::MissingIdOrField();
   auto view = optional.value().view();
   if (side == SIDE::BOTH || side == SIDE::LHS) {
-    lhs = Fields::Serialization<std::vector<ID>>::deserialize(view["lhs"]).value();
+    auto array = view["lhs"].get_array().value;
+    for (auto element : array) {
+      lhs.push_back(Fields::Serialization<ID>::deserialize(element["id"]).value());
+    }
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
-    rhs = Fields::Serialization<std::vector<ID>>::deserialize(view["rhs"]).value();
+    auto array = view["rhs"].get_array().value;
+    for (auto element : array) {
+      rhs.push_back(Fields::Serialization<ID>::deserialize(element["id"]).value());
+    }
   }
   return {lhs, rhs};
-}
-
-std::tuple<std::vector<Compound>, std::vector<Compound>> Reaction::getReactants(const SIDE side, const Manager& manager,
-                                                                                const std::string& collection) const {
-  auto reactantIds = getReactants(side);
-  auto collectionPtr = manager.getCollection(collection);
-  const auto transform = [&](std::vector<ID>& ids) -> std::vector<Compound> {
-    std::vector<Compound> compounds;
-    compounds.reserve(ids.size());
-    for (auto& id : ids) {
-      compounds.emplace_back(std::move(id), collectionPtr);
-    }
-    return compounds;
-  };
-  return std::make_tuple(transform(std::get<0>(reactantIds)), transform(std::get<1>(reactantIds)));
 }
 
 std::tuple<int, int> Reaction::hasReactants() const {
   auto reactants = this->getReactants(SIDE::BOTH);
   return {std::get<0>(reactants).size(), std::get<1>(reactants).size()};
+}
+
+std::tuple<std::vector<COMPOUND_OR_FLASK>, std::vector<COMPOUND_OR_FLASK>> Reaction::getReactantTypes(SIDE side) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  std::vector<COMPOUND_OR_FLASK> lhs;
+  std::vector<COMPOUND_OR_FLASK> rhs;
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  mongocxx::options::find options{};
+  if (side == SIDE::BOTH) {
+    options.projection(document{} << "lhs" << 1 << "rhs" << 1 << finalize);
+  }
+  else if (side == SIDE::LHS) {
+    options.projection(document{} << "lhs" << 1 << finalize);
+  }
+  else if (side == SIDE::RHS) {
+    options.projection(document{} << "rhs" << 1 << finalize);
+  }
+  else {
+    return {lhs, rhs};
+  }
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
+  if (!optional)
+    throw Exceptions::MissingIdOrField();
+  auto view = optional.value().view();
+  if (side == SIDE::BOTH || side == SIDE::LHS) {
+    auto array = view["lhs"].get_array().value;
+    for (auto element : array) {
+      const std::string i = element["type"].get_utf8().value.to_string();
+      lhs.push_back(EnumMaps::str2reactant.at(i));
+    }
+  }
+  if (side == SIDE::BOTH || side == SIDE::RHS) {
+    auto array = view["rhs"].get_array().value;
+    for (auto element : array) {
+      const std::string i = element["type"].get_utf8().value.to_string();
+      rhs.push_back(EnumMaps::str2reactant.at(i));
+    }
+  }
+  return {lhs, rhs};
+}
+
+COMPOUND_OR_FLASK Reaction::getReactantType(const ID& id) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  // clang-format off
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // clang-format on
+  mongocxx::options::find options{};
+  options.projection(document{} << "lhs" << 1 << "rhs" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view());
+  if (!optional)
+    throw Exceptions::MissingIdOrField();
+  auto view = optional.value().view();
+  std::string type = "";
+  auto lhs = view["lhs"].get_array().value;
+  for (auto element : lhs) {
+    if (element["id"].get_oid().value == id.bsoncxx()) {
+      type = element["type"].get_utf8().value.to_string();
+      break;
+    }
+  }
+  auto rhs = view["rhs"].get_array().value;
+  for (auto element : rhs) {
+    if (element["id"].get_oid().value == id.bsoncxx()) {
+      type = element["type"].get_utf8().value.to_string();
+      break;
+    }
+  }
+  if (type.empty()) {
+    throw Exceptions::MissingIdOrField();
+  }
+  return EnumMaps::str2reactant.at(type);
 }
 
 void Reaction::clearReactants(const SIDE side) const {

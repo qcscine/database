@@ -34,7 +34,7 @@ struct CollectionTest : public Test {
   }
 };
 
-Credentials CollectionTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_CollectionTest");
+Credentials CollectionTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_CollectionTest");
 Manager CollectionTest::db;
 
 TEST_F(CollectionTest, QueryID) {

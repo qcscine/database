@@ -22,7 +22,7 @@ namespace Tests {
  * @test
  */
 struct PropertyTest : public Test {
-  Credentials credentials{TEST_MONGO_DB_IP, 27017, "unittest_db_PropertyTest"};
+  Credentials credentials{TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_PropertyTest"};
   Manager db;
 
   void SetUp() final {

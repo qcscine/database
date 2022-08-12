@@ -35,7 +35,7 @@ class NumberPropertyTest : public Test {
     db.wipe();
   }
 };
-Credentials NumberPropertyTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_NumberPropertyTest");
+Credentials NumberPropertyTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_NumberPropertyTest");
 Manager NumberPropertyTest::db;
 
 TEST_F(NumberPropertyTest, Create1) {

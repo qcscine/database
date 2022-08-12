@@ -6,9 +6,10 @@ set(DATABASE_PYTHON_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/PropertyPython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/ElementaryStepPython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/ReactionPython.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ReactionSidePython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/ReactionEnumsPython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/CalculationPython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/CompoundPython.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/FlaskPython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/StructurePython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/ModelPython.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/MiscPython.cpp
@@ -33,6 +34,7 @@ set(DATABASE_TEST_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/VectorPropertyTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/CalculationTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/CompoundTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/FlaskTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/StructureTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/LevenshteinTest.cpp
 )
@@ -48,6 +50,8 @@ set(DATABASE_MODULE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/DenseMatrixProperty.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ElementaryStep.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ElementaryStep.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Flask.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Flask.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/NumberProperty.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/NumberProperty.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Object.cpp
@@ -55,7 +59,8 @@ set(DATABASE_MODULE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Property.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Property.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/Reaction.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ReactionSide.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ReactionEnums.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/ReactionEnums.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/SparseMatrixProperty.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/SparseMatrixProperty.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Database/Objects/StringProperty.cpp

@@ -9,9 +9,10 @@
 #include "Database/Objects/Structure.h"
 #include "Database/Collection.h"
 #include "Database/Exceptions.h"
+#include "Database/Manager.h"
+#include "Database/Objects/Calculation.h"
 #include "Database/Objects/Impl/Fields.h"
 #include "Database/Objects/Model.h"
-#include "Database/Objects/Property.h"
 /* External Includes */
 #include <Utils/Geometry/AtomCollection.h>
 #include <Utils/Geometry/ElementInfo.h>
@@ -65,8 +66,10 @@ ID createImpl(const Utils::AtomCollection& atoms, const int charge, const int mu
                         << "multiplicity" << multiplicity
                         << "label" << Layout::EnumMaps::label2str.at(label)
                         << "properties" << open_document << close_document
+                        << "calculations" << open_document << close_document
                         << "comment" << ""
-                        << "compound" << ""
+                        << "aggregate" << ""
+                        << "duplicate_of" << ""
                         << "graphs" << open_document << close_document
                         << finalize;
   // clang-format on
@@ -252,20 +255,36 @@ void Structure::setMultiplicity(const int multiplicity) const {
  *  Compound
  *============*/
 
+ID Structure::getAggregate() const {
+  return Fields::get<ID>(*this, "aggregate");
+}
+
+bool Structure::hasAggregate() const {
+  return Fields::nonNull(*this, "aggregate");
+}
+
+void Structure::setAggregate(const ID& id) const {
+  Fields::set(*this, "aggregate", id);
+}
+
+void Structure::clearAggregate() const {
+  Fields::set(*this, "aggregate", std::string{});
+}
+
 ID Structure::getCompound() const {
-  return Fields::get<ID>(*this, "compound");
+  return this->getAggregate();
 }
 
 bool Structure::hasCompound() const {
-  return Fields::nonNull(*this, "compound");
+  return this->hasAggregate();
 }
 
 void Structure::setCompound(const ID& id) const {
-  Fields::set(*this, "compound", id);
+  this->setAggregate(id);
 }
 
 void Structure::clearCompound() const {
-  Fields::set(*this, "compound", std::string{});
+  this->clearAggregate();
 }
 
 /*============*
@@ -365,7 +384,7 @@ std::vector<ID> Structure::getProperties(const std::string& key) const {
   auto doc = view["properties"].get_document().view();
   auto findIter = doc.find(key);
   if (findIter == doc.end()) {
-    throw Exceptions::MissingIdOrField();
+    return {};
   }
   bsoncxx::array::view id_array = findIter->get_array();
   std::vector<ID> ret;
@@ -490,6 +509,248 @@ void Structure::clearAllProperties() const {
   _collection->mongocxx().find_one_and_update(selection.view(), update.view());
 }
 
+/*================*
+ *  Calculations  *
+ *================*/
+
+bool Structure::hasCalculation(const std::string& key) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  const auto calculations = this->getAllCalculations();
+  return calculations.count(key) > 0;
+}
+
+bool Structure::hasCalculation(const ID& id) const {
+  // Get all execute search on client side.
+  auto calculations = this->getAllCalculations();
+  for (const auto& calcs : calculations) {
+    if (std::find(calcs.second.begin(), calcs.second.end(), id) != calcs.second.end())
+      return true;
+  }
+  return false;
+}
+
+ID Structure::getCalculation(const std::string& key) const {
+  auto vector = this->getCalculations(key);
+  if (vector.size() != 1)
+    throw Exceptions::FieldException();
+  return vector[0];
+}
+
+void Structure::setCalculation(const std::string& key, const ID& id) const {
+  this->setCalculations(key, {id});
+}
+
+void Structure::addCalculation(const std::string& key, const ID& id) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // clang-format off
+  auto update = document{} << "$push" << open_document
+                           << "calculations."+key << id.bsoncxx()
+                           << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+void Structure::addCalculations(const std::string& key, const std::vector<ID>& ids) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  bsoncxx::builder::basic::array array;
+  for (const auto& id : ids) {
+    array.append(id.bsoncxx());
+  }
+  // clang-format off
+  auto update = document{} << "$push" << open_document
+                           << "calculations."+key << open_document << "$each" << array
+                           << close_document << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+void Structure::removeCalculation(const std::string& key, const ID& id) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // clang-format off
+  auto update = document{} << "$pull" << open_document
+                           << "calculations."+key << id.bsoncxx()
+                           << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+void Structure::setCalculations(const std::string& key, const std::vector<ID>& ids) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  bsoncxx::builder::basic::array array;
+  for (const auto& id : ids) {
+    array.append(id.bsoncxx());
+  }
+  // clang-format off
+  auto update = document{} << "$set" << open_document
+                           << "calculations."+key << array
+                           << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+std::vector<ID> Structure::getCalculations(const std::string& key) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  mongocxx::options::find options{};
+  options.projection(document{} << "calculations" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
+  if (!optional)
+    throw Exceptions::MissingIdOrField();
+  auto view = optional.value().view();
+  auto doc = view["calculations"].get_document().view();
+  auto findIter = doc.find(key);
+  if (findIter == doc.end()) {
+    return {};
+  }
+  bsoncxx::array::view id_array = findIter->get_array();
+  std::vector<ID> ret;
+  for (bsoncxx::array::element ele : id_array) {
+    ret.emplace_back(ele.get_oid().value);
+  }
+  return ret;
+}
+
+std::vector<ID> Structure::queryCalculations(const std::string& key, const Model& model,
+                                             std::shared_ptr<Collection> collection) const {
+  // Return empty list if the key is not even present
+  const auto allCalculations = this->getAllCalculations();
+  const auto it = allCalculations.find(key);
+  if (it == allCalculations.end())
+    return {};
+  const auto& ids = it->second;
+
+  // Setup selection for query in calculations
+  bsoncxx::builder::basic::array array;
+  for (const auto& id : ids) {
+    array.append(id.bsoncxx());
+  }
+
+  auto selection = document{} << "_id" << open_document << "$in" << array << close_document << finalize;
+  auto cursor = collection->mongocxx().find(selection.view());
+  std::vector<ID> ret;
+  for (const auto& doc : cursor) {
+    Model docModel(doc["model"].get_document().view());
+    if (docModel == model) {
+      ret.emplace_back(doc["_id"].get_oid().value);
+    }
+  }
+  return ret;
+}
+
+int Structure::hasCalculations(const std::string& key) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto calculations = this->getAllCalculations();
+  if (calculations.count(key) == 0)
+    return 0;
+  return calculations[key].size();
+}
+
+void Structure::clearCalculations(const std::string& key) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // clang-format off
+  auto update = document{} << "$unset" << open_document
+                           << "calculations."+key << ""
+                           << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+std::map<std::string, std::vector<ID>> Structure::getAllCalculations() const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  mongocxx::options::find options{};
+  options.projection(document{} << "calculations" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
+  if (!optional)
+    throw Exceptions::MissingIdOrField();
+  auto view = optional.value().view();
+  auto doc = view["calculations"].get_document().view();
+  std::map<std::string, std::vector<ID>> ret;
+  for (bsoncxx::document::element ele : doc) {
+    std::vector<ID> tmp;
+    bsoncxx::array::view array = ele.get_array();
+    for (bsoncxx::array::element entry : array) {
+      tmp.emplace_back(entry.get_oid().value);
+    }
+    ret[ele.key().to_string()] = tmp;
+  }
+  return ret;
+}
+
+void Structure::setAllCalculations(const std::map<std::string, std::vector<ID>>& calculations) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  bsoncxx::builder::basic::document doc;
+  for (const auto& data : calculations) {
+    bsoncxx::builder::basic::array array;
+    for (const auto& id : data.second) {
+      array.append(id.bsoncxx());
+    }
+    doc.append(bsoncxx::builder::basic::kvp(data.first, array));
+  }
+  // clang-format off
+  auto update = document{} << "$set" << open_document
+                           << "calculations" << doc
+                           << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+void Structure::clearAllCalculations() const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // clang-format off
+  auto update = document{} << "$set" << open_document
+                           << "calculations" << open_document << close_document
+                           << close_document
+                           << "$currentDate" << open_document
+                           << "_lastmodified" << true
+                           << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
 /*===================*
  *  Molecular Graph
  *===================*/
@@ -552,33 +813,11 @@ bool Structure::hasGraph(const std::string& key) const {
 }
 
 int Structure::hasGraphs() const {
-  if (!_collection)
-    throw Exceptions::MissingLinkedCollectionException();
-  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
-  mongocxx::options::find options{};
-  options.projection(document{} << "graphs" << 1 << finalize);
-  auto optional = _collection->mongocxx().find_one(selection.view(), options);
-  if (!optional)
-    throw Exceptions::MissingIdOrField();
-  auto view = optional.value().view();
-  auto doc = view["graphs"].get_document().view();
-  return std::distance(doc.begin(), doc.end());
+  return this->getGraphs().size();
 }
 
 void Structure::clearGraphs() const {
-  if (!_collection)
-    throw Exceptions::MissingLinkedCollectionException();
-  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
-  // clang-format off
-  auto update = document{} << "$set" << open_document
-                             << "graphs" << open_document << close_document
-                             << close_document
-                           << "$currentDate" << open_document
-                             << "_lastmodified" << true
-                             << close_document
-                           << finalize;
-  // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  this->setGraphs({});
 }
 
 std::map<std::string, std::string> Structure::getGraphs() const {
@@ -637,6 +876,21 @@ bool Structure::hasComment() const {
 
 void Structure::clearComment() const {
   this->setComment("");
+}
+
+ID Structure::isDuplicateOf() const {
+  if (!Fields::nonNull(*this, "duplicate_of")) {
+    throw Exceptions::UnpopulatedObjectException();
+  }
+  return Fields::get<ID>(*this, "duplicate_of");
+}
+
+void Structure::setAsDuplicateOf(const ID& id) const {
+  Fields::set<ID>(*this, "duplicate_of", id);
+}
+
+void Structure::clearDuplicateID() const {
+  Fields::set(*this, "duplicate_of", std::string{});
 }
 
 } /* namespace Database */

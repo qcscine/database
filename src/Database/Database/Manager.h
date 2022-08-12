@@ -54,6 +54,15 @@ class Credentials {
   std::string password;
   /// @brief The authentication database, if authentication is required.
   std::string authDatabase;
+
+  bool operator==(const Credentials& rhs) const {
+    return this->hostname == rhs.hostname && this->port == rhs.port && this->databaseName == rhs.databaseName &&
+           this->username == rhs.username && this->password == rhs.password && this->authDatabase == rhs.authDatabase;
+  }
+
+  bool operator!=(const Credentials& rhs) const {
+    return !(*this == rhs);
+  }
 };
 
 /**

@@ -14,7 +14,8 @@ class ManagerTest(unittest.TestCase):
     def setUp(self):
         self.manager = db.Manager()
         self.manager.credentials.hostname = os.environ.get(
-            'TEST_MONGO_DB_IP') or '127.0.0.1'
+            'TEST_MONGO_DB_IP', '127.0.0.1')
+        self.manager.credentials.port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         self.manager.credentials.database_name = "unittest_db_ManagerTest"
         self.manager.connect()
         self.manager.init()
@@ -30,8 +31,9 @@ class ManagerTest(unittest.TestCase):
 
     def test_credentials_getter_working(self):
         manager2 = db.Manager()
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
         credentials = db.Credentials(
-            "THERE_AINT_NO_HOST_HERE", 27017, "unittest_db_AaBbCc")
+            "THERE_AINT_NO_HOST_HERE", test_port, "unittest_db_AaBbCc")
         manager2.set_credentials(credentials)
         copy = manager2.get_credentials()
         assert credentials.hostname == copy.hostname
@@ -41,10 +43,23 @@ class ManagerTest(unittest.TestCase):
         assert credentials.password == copy.password
         assert credentials.auth_database == copy.auth_database
 
+    def test_credentials_comparison(self):
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        credentials = db.Credentials(
+            "THERE_AINT_NO_HOST_HERE", test_port, "unittest_db_AaBbCc")
+        credentials1 = db.Credentials(
+            "THERE_AINT_NO_HOST_HERE", test_port, "unittest_db_AaBbCc")
+        credentials2 = db.Credentials(
+            "THERE_AINT_NO_OTHER_HOST_HERE", test_port, "unittest_db_AaBbCc")
+        assert credentials == credentials1
+        assert credentials != credentials2
+        assert credentials1 != credentials2
+
     def test_db_name(self):
         manager = db.Manager()
-        test_ip = os.environ.get('TEST_MONGO_DB_IP') or '127.0.0.1'
-        test_db = db.Credentials(test_ip, 27017, "unittest_db_AaBbCc")
+        test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
         manager.init()
@@ -74,8 +89,9 @@ class ManagerTest(unittest.TestCase):
 
     def test_connection_credentials_init_and_wipe(self):
         manager = db.Manager()
-        test_ip = os.environ.get('TEST_MONGO_DB_IP') or '127.0.0.1'
-        test_db = db.Credentials(test_ip, 27017, "unittest_db_AaBbCc")
+        test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
         manager.init()
@@ -110,8 +126,9 @@ class ManagerTest(unittest.TestCase):
 
     def test_remote_wipe(self):
         manager = db.Manager()
-        test_ip = os.environ.get('TEST_MONGO_DB_IP') or '127.0.0.1'
-        test_db = db.Credentials(test_ip, 27017, "unittest_db_AaBbCc")
+        test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
         manager.init()
@@ -137,16 +154,18 @@ class ManagerTest(unittest.TestCase):
     def test_server_time(self):
         manager = db.Manager()
         self.assertRaises(RuntimeError, lambda: manager.server_time())
-        test_ip = os.environ.get('TEST_MONGO_DB_IP') or '127.0.0.1'
-        test_db = db.Credentials(test_ip, 27017, "unittest_db_AaBbCc")
+        test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
         manager.server_time()
 
     def test_reconnect(self):
         manager = db.Manager()
-        test_ip = os.environ.get('TEST_MONGO_DB_IP') or '127.0.0.1'
-        test_db = db.Credentials(test_ip, 27017, "unittest_db_AaBbCc")
+        test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
         manager.init()

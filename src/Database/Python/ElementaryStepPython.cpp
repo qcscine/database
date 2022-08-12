@@ -12,7 +12,7 @@
 #include <Database/Manager.h>
 #include <Database/Objects/ElementaryStep.h>
 #include <Database/Objects/Reaction.h>
-#include <Database/Objects/ReactionSide.h>
+#include <Database/Objects/ReactionEnums.h>
 #include <Database/Objects/Structure.h>
 #include <Utils/Math/BSplines/ReactionProfileInterpolation.h>
 #include <Utils/Pybind.h>
@@ -34,6 +34,10 @@ void init_elementary_step(pybind11::module& m) {
       Data-wise, the elementary step consists of a transition state
       ``Structure``, two sets of ``Structures``, one on each ``Side`` of the
       transition state, and a linked ``Reaction``.
+      The `idx_map` arrays can be used to store which atom indices of the
+      (joined) structures on one side of the elementary step correspond to which
+      atom indices of the joined structures on the other side or of the
+      transition state.
 
       :example:
       >>> lhs = [ID(), ID()]  # Generate a few placeholder IDs
@@ -49,6 +53,18 @@ void init_elementary_step(pybind11::module& m) {
       (2, 1)
       >>> step.has_reaction()
       True
+      >>> step.add_idx_maps([1, 2, 0, 3]) # Add the lhs-rhs map
+      >>> step.has_idx_map(ElementaryStep.IdxMapType.LHS_RHS)
+      True
+      >>> step.has_idx_map(ElementaryStep.IdxMapType.LHS_TS)
+      False
+      >>> step.add_idx_maps([1, 2, 0, 3], [1, 3, 0, 2]) # Add the lhs-rhs and lhs-ts map
+      >>> step.has_idx_map(ElementaryStep.IdxMapType.LHS_TS)
+      True
+      >>> step.has_idx_map(ElementaryStep.IdxMapType.TS_RHS) # ts-rhs from combination of stored maps
+      True
+      >>> step.get_idx_map(ElementaryStep.IdxMapType.TS_RHS)
+      [0, 1, 3, 2]
     )delim");
   elementaryStep.def(pybind11::init<>());
   elementaryStep.def(pybind11::init<const ID&>());
@@ -102,9 +118,38 @@ void init_elementary_step(pybind11::module& m) {
   elementaryStep.def("get_spline", &ElementaryStep::getSpline);
   elementaryStep.def("clear_spline", &ElementaryStep::clearSpline);
 
+  elementaryStep.def("has_structure_in_path", &ElementaryStep::hasStructureInPath, pybind11::arg("id"));
+  elementaryStep.def("get_path", pybind11::overload_cast<>(&ElementaryStep::getPath, pybind11::const_));
+  elementaryStep.def("get_path",
+                     pybind11::overload_cast<const Manager&, const std::string&>(&ElementaryStep::getPath, pybind11::const_),
+                     pybind11::arg("manager"), pybind11::arg("collection") = Layout::DefaultCollection::structure,
+                     "Fetch all structures belonging to the elementary step's path");
+  elementaryStep.def("has_path", &ElementaryStep::hasPath);
+  elementaryStep.def("set_path", &ElementaryStep::setPath, pybind11::arg("ids"));
+  elementaryStep.def("clear_path", &ElementaryStep::clearPath);
+
   pybind11::enum_<ElementaryStepType> estype(m, "ElementaryStepType");
   estype.value("REGULAR", ElementaryStepType::REGULAR, "A regular elementary step that involves exactly one transition state.");
   estype.value("BARRIERLESS", ElementaryStepType::BARRIERLESS, "An elementary step that has no barrier/ transition state");
   elementaryStep.def("get_type", &ElementaryStep::getType);
   elementaryStep.def("set_type", &ElementaryStep::setType);
+  elementaryStep.def("get_barrier_from_spline", &ElementaryStep::getBarrierFromSpline, R"delim(
+      Returns the rhs and lhs barrier calculated from the spline as a tuple. If no spline is available, (0.0, 0.0)
+      is returned.)delim");
+
+  pybind11::enum_<ElementaryStep::IdxMapType> idxMapType(elementaryStep, "IdxMapType");
+  idxMapType.value("LHS_TS", ElementaryStep::IdxMapType::LHS_TS, "The atoms index map from lhs to ts.");
+  idxMapType.value("LHS_RHS", ElementaryStep::IdxMapType::LHS_RHS, "The atoms index map from lhs to rhs.");
+  idxMapType.value("TS_LHS", ElementaryStep::IdxMapType::TS_LHS, "The atoms index map from ts to lhs.");
+  idxMapType.value("RHS_LHS", ElementaryStep::IdxMapType::RHS_LHS, "The atoms index map from rhs to lhs.");
+  idxMapType.value("TS_RHS", ElementaryStep::IdxMapType::TS_RHS, "The atoms index map from ts to rhs.");
+  idxMapType.value("RHS_TS", ElementaryStep::IdxMapType::RHS_TS, "The atoms index map from rhs to ts.");
+  elementaryStep.def("add_idx_maps", &ElementaryStep::addIdxMaps, pybind11::arg("lhs_rhs_map"),
+                     pybind11::arg("lhs_ts_map") = pybind11::none(),
+                     "Adds the atom index map(s). The lhs to ts map is optional.");
+  elementaryStep.def("remove_idx_maps", &ElementaryStep::removeIdxMaps, "Removes the atom index maps.");
+  elementaryStep.def("has_idx_map", &ElementaryStep::hasIdxMap, pybind11::arg("map_type"),
+                     "Checks whether a map with the given type exists or can be retrieved from the existing ones.");
+  elementaryStep.def("get_idx_map", &ElementaryStep::getIdxMap, pybind11::arg("map_type"),
+                     "Gets the atom index map of the given type.");
 }

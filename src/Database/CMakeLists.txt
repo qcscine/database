@@ -75,6 +75,13 @@ if(SCINE_BUILD_TESTS)
   target_compile_definitions(Database_tests PRIVATE
     TEST_MONGO_DB_IP="${TEST_MONGO_DB_IP}"
   )
+  set(
+    TEST_MONGO_DB_PORT "27017" CACHE
+    STRING "The port of the MongoDB the unittests will use."
+  )
+  target_compile_definitions(Database_tests PRIVATE
+    TEST_MONGO_DB_PORT="${TEST_MONGO_DB_PORT}"
+  )
 endif()
 
 # Python Bindings

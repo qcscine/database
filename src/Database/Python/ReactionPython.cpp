@@ -53,10 +53,16 @@ void init_reaction(pybind11::class_<Reaction, Object>& reaction) {
 
   reaction.def_static(
       "make",
-      pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&, const Object::CollectionPtr&>(&Reaction::create),
-      pybind11::arg("lhs"), pybind11::arg("rhs"), pybind11::arg("collection"));
-  reaction.def("create", pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&>(&Reaction::create),
-               pybind11::arg("lhs"), pybind11::arg("rhs"));
+      pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&, const Object::CollectionPtr&,
+                              const std::vector<COMPOUND_OR_FLASK>&, const std::vector<COMPOUND_OR_FLASK>&>(&Reaction::create),
+      pybind11::arg("lhs"), pybind11::arg("rhs"), pybind11::arg("collection"),
+      pybind11::arg("lhsTypes") = std::vector<COMPOUND_OR_FLASK>({}),
+      pybind11::arg("rhsTypes") = std::vector<COMPOUND_OR_FLASK>({}));
+  reaction.def("create",
+               pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&, const std::vector<COMPOUND_OR_FLASK>&,
+                                       const std::vector<COMPOUND_OR_FLASK>&>(&Reaction::create),
+               pybind11::arg("lhs"), pybind11::arg("rhs"), pybind11::arg("lhsTypes") = std::vector<COMPOUND_OR_FLASK>({}),
+               pybind11::arg("rhsTypes") = std::vector<COMPOUND_OR_FLASK>({}));
 
   reaction.def("has_elementary_step", &Reaction::hasElementaryStep, pybind11::arg("id"));
   reaction.def("add_elementary_step", &Reaction::addElementaryStep, pybind11::arg("id"));
@@ -76,16 +82,14 @@ void init_reaction(pybind11::class_<Reaction, Object>& reaction) {
                "Fetch all elementary steps constituting the reaction");
 
   reaction.def("has_reactant", &Reaction::hasReactant, pybind11::arg("id"));
-  reaction.def("add_reactant", &Reaction::addReactant, pybind11::arg("id"), pybind11::arg("side"));
+  reaction.def("add_reactant", &Reaction::addReactant, pybind11::arg("id"), pybind11::arg("side"), pybind11::arg("type"));
   reaction.def("remove_reactant", &Reaction::removeReactant, pybind11::arg("id"), pybind11::arg("side"));
   reaction.def("has_reactants", &Reaction::hasReactants);
-  reaction.def("set_reactants", &Reaction::setReactants, pybind11::arg("ids"), pybind11::arg("side"));
+  reaction.def("set_reactants", &Reaction::setReactants, pybind11::arg("ids"), pybind11::arg("side"),
+               pybind11::arg("types") = std::vector<COMPOUND_OR_FLASK>({}));
   reaction.def("get_reactants", pybind11::overload_cast<const SIDE>(&Reaction::getReactants, pybind11::const_),
                pybind11::arg("side"));
-  reaction.def(
-      "get_reactants",
-      pybind11::overload_cast<const SIDE, const Manager&, const std::string&>(&Reaction::getReactants, pybind11::const_),
-      pybind11::arg("side"), pybind11::arg("manager"), pybind11::arg("collection") = Layout::DefaultCollection::compound,
-      "Fetch all reactant compound IDs of the reaction");
+  reaction.def("get_reactant_types", &Reaction::getReactantTypes, pybind11::arg("side"));
+  reaction.def("get_reactant_type", &Reaction::getReactantType, pybind11::arg("ids"));
   reaction.def("clear_reactants", &Reaction::clearReactants, pybind11::arg("side"));
 }

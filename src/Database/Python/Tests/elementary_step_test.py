@@ -15,7 +15,8 @@ class ElementaryStepTest(unittest.TestCase):
     def setUp(self):
         self.manager = db.Manager()
         self.manager.credentials.hostname = os.environ.get(
-            'TEST_MONGO_DB_IP') or '127.0.0.1'
+            'TEST_MONGO_DB_IP', '127.0.0.1')
+        self.manager.credentials.port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         self.manager.credentials.database_name = "unittest_db_ElementaryStepTest"
         self.manager.connect()
         self.manager.init()
@@ -313,3 +314,46 @@ class ElementaryStepTest(unittest.TestCase):
         self.assertRaises(RuntimeError, lambda: step.get_spline())
         self.assertRaises(RuntimeError, lambda: step.set_spline(spline))
         self.assertRaises(RuntimeError, lambda: step.clear_spline())
+
+    def test_path(self):
+        # Basic setup
+        coll = self.manager.get_collection("elementary_steps")
+        step = db.ElementaryStep.make([db.ID()], [db.ID()], coll)
+        assert step.has_id()
+
+        # Checks  // Setup
+        ref = [db.ID(), db.ID(), db.ID()]
+        assert not step.has_path()
+        step.set_path(ref)
+        assert step.has_path()
+        assert step.has_structure_in_path(ref[0])
+        assert step.has_structure_in_path(ref[1])
+        assert step.has_structure_in_path(ref[2])
+        path = step.get_path()
+        assert path[0] == ref[0]
+        assert path[1] == ref[1]
+        assert path[2] == ref[2]
+        step.clear_path()
+        assert not step.has_path()
+
+    def test_path_fails_collection(self):
+        step = db.ElementaryStep(db.ID())
+        id = db.ID()
+        self.assertRaises(RuntimeError, lambda: step.has_path())
+        self.assertRaises(RuntimeError, lambda: step.get_path())
+        self.assertRaises(RuntimeError, lambda: step.set_path([id]))
+        self.assertRaises(RuntimeError, lambda: step.clear_path())
+        self.assertRaises(RuntimeError, lambda: step.has_structure_in_path(id))
+        self.assertRaises(RuntimeError, lambda: step.get_path(self.manager))
+
+    def test_path_fails_id(self):
+        coll = self.manager.get_collection("elementary_steps")
+        step = db.ElementaryStep()
+        step.link(coll)
+        id = db.ID()
+        self.assertRaises(RuntimeError, lambda: step.has_path())
+        self.assertRaises(RuntimeError, lambda: step.get_path())
+        self.assertRaises(RuntimeError, lambda: step.set_path([id]))
+        self.assertRaises(RuntimeError, lambda: step.clear_path())
+        self.assertRaises(RuntimeError, lambda: step.has_structure_in_path(id))
+        self.assertRaises(RuntimeError, lambda: step.get_path(self.manager))

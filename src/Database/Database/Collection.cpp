@@ -13,6 +13,7 @@
 #include "Database/Objects/Compound.h"
 #include "Database/Objects/DenseMatrixProperty.h"
 #include "Database/Objects/ElementaryStep.h"
+#include "Database/Objects/Flask.h"
 #include "Database/Objects/NumberProperty.h"
 #include "Database/Objects/Object.h"
 #include "Database/Objects/Property.h"
@@ -269,6 +270,7 @@ template class Collection::CollectionLooper<Compound>;
 template class Collection::CollectionLooper<ElementaryStep>;
 template class Collection::CollectionLooper<Reaction>;
 template class Collection::CollectionLooper<Structure>;
+template class Collection::CollectionLooper<Flask>;
 template class Collection::CollectionLooper<Property>;
 template class Collection::CollectionLooper<BoolProperty>;
 template class Collection::CollectionLooper<NumberProperty>;
@@ -282,6 +284,7 @@ template Compound Collection::get<Compound>(ID id);
 template ElementaryStep Collection::get<ElementaryStep>(ID id);
 template Reaction Collection::get<Reaction>(ID id);
 template Structure Collection::get<Structure>(ID id);
+template Flask Collection::get<Flask>(ID id);
 template Property Collection::get<Property>(ID id);
 template BoolProperty Collection::get<BoolProperty>(ID id);
 template NumberProperty Collection::get<NumberProperty>(ID id);
@@ -295,6 +298,7 @@ template bool Collection::has<Compound>(const ID& id);
 template bool Collection::has<ElementaryStep>(const ID& id);
 template bool Collection::has<Reaction>(const ID& id);
 template bool Collection::has<Structure>(const ID& id);
+template bool Collection::has<Flask>(const ID& id);
 template bool Collection::has<Property>(const ID& id);
 template bool Collection::has<BoolProperty>(const ID& id);
 template bool Collection::has<NumberProperty>(const ID& id);
@@ -308,6 +312,7 @@ template Collection::CollectionLooper<Compound> Collection::iteratorQuery<Compou
 template Collection::CollectionLooper<ElementaryStep> Collection::iteratorQuery<ElementaryStep>(const std::string& selection);
 template Collection::CollectionLooper<Reaction> Collection::iteratorQuery<Reaction>(const std::string& selection);
 template Collection::CollectionLooper<Structure> Collection::iteratorQuery<Structure>(const std::string& selection);
+template Collection::CollectionLooper<Flask> Collection::iteratorQuery<Flask>(const std::string& selection);
 template Collection::CollectionLooper<Property> Collection::iteratorQuery<Property>(const std::string& selection);
 template Collection::CollectionLooper<BoolProperty> Collection::iteratorQuery<BoolProperty>(const std::string& selection);
 template Collection::CollectionLooper<NumberProperty> Collection::iteratorQuery<NumberProperty>(const std::string& selection);
@@ -323,6 +328,7 @@ template std::vector<Compound> Collection::query<Compound>(const std::string& se
 template std::vector<ElementaryStep> Collection::query<ElementaryStep>(const std::string& selection);
 template std::vector<Reaction> Collection::query<Reaction>(const std::string& selection);
 template std::vector<Structure> Collection::query<Structure>(const std::string& selection);
+template std::vector<Flask> Collection::query<Flask>(const std::string& selection);
 template std::vector<Property> Collection::query<Property>(const std::string& selection);
 template std::vector<BoolProperty> Collection::query<BoolProperty>(const std::string& selection);
 template std::vector<NumberProperty> Collection::query<NumberProperty>(const std::string& selection);
@@ -336,6 +342,7 @@ template std::vector<Compound> Collection::randomSelect<Compound>(std::int32_t n
 template std::vector<ElementaryStep> Collection::randomSelect<ElementaryStep>(std::int32_t nSamples);
 template std::vector<Reaction> Collection::randomSelect<Reaction>(std::int32_t nSamples);
 template std::vector<Structure> Collection::randomSelect<Structure>(std::int32_t nSamples);
+template std::vector<Flask> Collection::randomSelect<Flask>(std::int32_t nSamples);
 template std::vector<Property> Collection::randomSelect<Property>(std::int32_t nSamples);
 template std::vector<BoolProperty> Collection::randomSelect<BoolProperty>(std::int32_t nSamples);
 template std::vector<NumberProperty> Collection::randomSelect<NumberProperty>(std::int32_t nSamples);
@@ -349,6 +356,7 @@ template Compound Collection::getOne<Compound>(const std::string& filter, const 
 template ElementaryStep Collection::getOne<ElementaryStep>(const std::string& filter, const std::string& sort);
 template Reaction Collection::getOne<Reaction>(const std::string& filter, const std::string& sort);
 template Structure Collection::getOne<Structure>(const std::string& filter, const std::string& sort);
+template Flask Collection::getOne<Flask>(const std::string& filter, const std::string& sort);
 template Property Collection::getOne<Property>(const std::string& filter, const std::string& sort);
 template BoolProperty Collection::getOne<BoolProperty>(const std::string& filter, const std::string& sort);
 template NumberProperty Collection::getOne<NumberProperty>(const std::string& filter, const std::string& sort);
@@ -367,6 +375,7 @@ template Reaction Collection::getAndUpdateOne<Reaction>(const std::string& filte
                                                         const std::string& sort);
 template Structure Collection::getAndUpdateOne<Structure>(const std::string& filter, const std::string& update,
                                                           const std::string& sort);
+template Flask Collection::getAndUpdateOne<Flask>(const std::string& filter, const std::string& update, const std::string& sort);
 template Property Collection::getAndUpdateOne<Property>(const std::string& filter, const std::string& update,
                                                         const std::string& sort);
 template BoolProperty Collection::getAndUpdateOne<BoolProperty>(const std::string& filter, const std::string& update,

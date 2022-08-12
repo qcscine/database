@@ -234,6 +234,17 @@ void Manager::init(bool moreIndices) {
     calculations.create_index(std::move(main), std::move(partial));
     auto status = document{} << "status" << 1 << finalize;
     calculations.create_index(std::move(status));
+    // clang-format off
+    auto results = document{} << "results" << 1 << finalize;
+    auto partial_results = document{} << "partialFilterExpression" << open_document
+                                        << "status" << open_document
+                                          << "$eq" << "complete"
+                                          << close_document
+                                        << close_document
+                                      << "name" << "results_complete_partial"
+                                      << finalize;
+    // clang-format on
+    calculations.create_index(std::move(results), std::move(partial_results));
   }
 }
 

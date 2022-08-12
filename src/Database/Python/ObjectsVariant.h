@@ -16,12 +16,13 @@
 #include <Database/Objects/Compound.h>
 #include <Database/Objects/DenseMatrixProperty.h>
 #include <Database/Objects/ElementaryStep.h>
+#include <Database/Objects/Flask.h>
 #include <Database/Objects/Model.h>
 #include <Database/Objects/NumberProperty.h>
 #include <Database/Objects/Object.h>
 #include <Database/Objects/Property.h>
 #include <Database/Objects/Reaction.h>
-#include <Database/Objects/ReactionSide.h>
+#include <Database/Objects/ReactionEnums.h>
 #include <Database/Objects/SparseMatrixProperty.h>
 #include <Database/Objects/StringProperty.h>
 #include <Database/Objects/Structure.h>
@@ -37,7 +38,7 @@ namespace Database {
 
 using DerivedObjectVariant =
     boost::variant<BoolProperty, Calculation, Compound, DenseMatrixProperty, ElementaryStep, NumberProperty, Reaction,
-                   SparseMatrixProperty, StringProperty, Structure, VectorProperty>;
+                   SparseMatrixProperty, StringProperty, Structure, VectorProperty, Flask>;
 
 using PropertiesVariant =
     boost::variant<BoolProperty, DenseMatrixProperty, NumberProperty, SparseMatrixProperty, StringProperty, VectorProperty>;

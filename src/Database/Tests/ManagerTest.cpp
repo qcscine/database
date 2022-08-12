@@ -20,7 +20,7 @@ namespace Tests {
  * @test
  */
 struct ManagerTest : public Test {
-  Credentials credentials{TEST_MONGO_DB_IP, 27017, "unittest_db_ManagerTest"};
+  Credentials credentials{TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_ManagerTest"};
   Manager db;
 
   void SetUp() final {
@@ -52,9 +52,18 @@ TEST_F(ManagerTest, CredentialGetter_Working) {
   ASSERT_EQ(testdb.authDatabase, copy.authDatabase);
 }
 
+TEST_F(ManagerTest, CredentialComparison) {
+  Credentials testdb("THERE_AINT_NO_HOST_HERE", 27017, "unittest_db_AaBbCc");
+  Credentials testdb1("THERE_AINT_NO_HOST_HERE", 27017, "unittest_db_AaBbCc");
+  Credentials testdb2("THERE_AINT_NO_OTHER_HOST_HERE", 27017, "unittest_db_AaBbCc");
+  ASSERT_TRUE(testdb == testdb1);
+  ASSERT_FALSE(testdb == testdb2);
+  ASSERT_FALSE(testdb1 == testdb2);
+}
+
 TEST_F(ManagerTest, DatabaseName_Working) {
   Manager manager;
-  Credentials testdb(TEST_MONGO_DB_IP, 27017, "unittest_db_AaBbCc");
+  Credentials testdb(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_AaBbCc");
   manager.setCredentials(testdb);
   manager.connect();
   manager.init();
@@ -67,6 +76,7 @@ TEST_F(ManagerTest, DatabaseName_Working) {
   ASSERT_TRUE(manager.hasCollection("compounds"));
   ASSERT_TRUE(manager.hasCollection("reactions"));
   ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
   manager.wipe();
   // Swap DB name
   manager.setDatabaseName("unittest_db_DdEeFf");
@@ -80,12 +90,13 @@ TEST_F(ManagerTest, DatabaseName_Working) {
   ASSERT_TRUE(manager.hasCollection("compounds"));
   ASSERT_TRUE(manager.hasCollection("reactions"));
   ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
   manager.wipe();
 }
 
 TEST_F(ManagerTest, ConnectionCredentialsInitAndWipe) {
   Manager manager;
-  Credentials testdb(TEST_MONGO_DB_IP, 27017, "unittest_db_AaBbCc");
+  Credentials testdb(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_AaBbCc");
   manager.setCredentials(testdb);
   manager.connect();
   manager.init();
@@ -97,6 +108,7 @@ TEST_F(ManagerTest, ConnectionCredentialsInitAndWipe) {
   ASSERT_TRUE(manager.hasCollection("compounds"));
   ASSERT_TRUE(manager.hasCollection("reactions"));
   ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
   // Wipe and check again
   manager.wipe();
   ASSERT_FALSE(manager.hasCollection("structures"));
@@ -105,6 +117,7 @@ TEST_F(ManagerTest, ConnectionCredentialsInitAndWipe) {
   ASSERT_FALSE(manager.hasCollection("compounds"));
   ASSERT_FALSE(manager.hasCollection("reactions"));
   ASSERT_FALSE(manager.hasCollection("elementary_steps"));
+  ASSERT_FALSE(manager.hasCollection("flasks"));
   // Init and check again
   manager.init();
   ASSERT_TRUE(manager.hasCollection("structures"));
@@ -113,6 +126,7 @@ TEST_F(ManagerTest, ConnectionCredentialsInitAndWipe) {
   ASSERT_TRUE(manager.hasCollection("compounds"));
   ASSERT_TRUE(manager.hasCollection("reactions"));
   ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
   // Clean
   manager.wipe();
   manager.disconnect();
@@ -121,7 +135,7 @@ TEST_F(ManagerTest, ConnectionCredentialsInitAndWipe) {
 
 TEST_F(ManagerTest, RemoteWipe) {
   Manager manager;
-  Credentials testdb(TEST_MONGO_DB_IP, 27017, "unittest_db_AaBbCc");
+  Credentials testdb(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_AaBbCc");
   manager.setCredentials(testdb);
   manager.connect();
   manager.init();
@@ -133,6 +147,7 @@ TEST_F(ManagerTest, RemoteWipe) {
   ASSERT_TRUE(manager.hasCollection("compounds"));
   ASSERT_TRUE(manager.hasCollection("reactions"));
   ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
   // Wipe and check again
   manager.disconnect();
   manager.wipe(true);
@@ -143,12 +158,13 @@ TEST_F(ManagerTest, RemoteWipe) {
   ASSERT_FALSE(manager.hasCollection("compounds"));
   ASSERT_FALSE(manager.hasCollection("reactions"));
   ASSERT_FALSE(manager.hasCollection("elementary_steps"));
+  ASSERT_FALSE(manager.hasCollection("flasks"));
 }
 
 TEST_F(ManagerTest, ServerTime) {
   Manager manager;
   ASSERT_THROW(manager.serverTime(), Exceptions::DatabaseDisconnectedException);
-  Credentials testdb(TEST_MONGO_DB_IP, 27017, "unittest_db_AaBbCc");
+  Credentials testdb(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_AaBbCc");
   manager.setCredentials(testdb);
   manager.connect();
   manager.serverTime();
@@ -156,7 +172,7 @@ TEST_F(ManagerTest, ServerTime) {
 
 TEST_F(ManagerTest, Reconnect) {
   Manager manager;
-  Credentials testdb(TEST_MONGO_DB_IP, 27017, "unittest_db_AaBbCc");
+  Credentials testdb(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_AaBbCc");
   manager.setCredentials(testdb);
   manager.connect();
   manager.init();

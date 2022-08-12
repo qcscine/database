@@ -58,7 +58,6 @@ setuptools.setup(
     author_email="scine@phys.chem.ethz.ch",
     description="SCINE database utilities for chemical reaction networks",
     long_description=long_description,
-    long_description_content_type="text/markdown",
     url="https://www.scine.ethz.ch",
     packages=["scine_database"],
     package_data=collect_data("scine_database"),

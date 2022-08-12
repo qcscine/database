@@ -16,7 +16,7 @@ namespace Database {
 namespace Version {
 
 constexpr static const int major = 1;
-constexpr static const int minor = 0;
+constexpr static const int minor = 1;
 constexpr static const int patch = 0;
 
 } // namespace Version

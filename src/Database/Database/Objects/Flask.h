@@ -1,11 +1,11 @@
 /**
- * @file Compound.h
+ * @file Flask.h
  * @copyright This code is licensed under the 3-clause BSD license.\n
  *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
-#ifndef DATABASE_COMPOUND_H_
-#define DATABASE_COMPOUND_H_
+#ifndef DATABASE_FLASK_H_
+#define DATABASE_FLASK_H_
 
 /* Internal Includes */
 #include "Database/Layout.h"
@@ -18,51 +18,52 @@ namespace Database {
 
 class Manager;
 class Structure;
+class Compound;
 class Reaction;
 
 /**
- * @class Compound Compound.h
- * @brief A group of molecular structures, all (relative) minima on their respective
- *        potential energy surface.
+ * @class Flask Flask.h
+ * @brief A group of molecular structures, all complexes of multiple molecules.
  *
- * All structures in one Compound represent the same molecule.
+ * All structures in one Flask each represent a complex of the same set of molecules.
  * A set of molecular structures with the same nuclear composition and connectivity
  * in terms of chemical bonds.
- * A compound thus represents a chemical compound in a general sense.
- * Its connection to other compounds via reactions should span the main view of any
- * network.
+ * Its connection to other flasks and compounds via reactions should span the
+ * main view of any network.
  *
  * Developer notes:
- *  - Compounds, as do all other meta Objects, only store IDs of other Objects, they
+ *  - Flasks, as do all other meta Objects, only store IDs of other Objects, they
  *    do not store the objects themselves. This keeps the storage requirement minimal
  *    and does not allow for unused copies of Objects and their data in these meta
  *    type Objects.
  */
-class Compound : public Object {
+class Flask : public Object {
  public:
   /// @brief The name of this derived database object.
-  static constexpr const char* objecttype = "compound";
+  static constexpr const char* objecttype = "flask";
 
   // Inherit constructors
   using Object::Object;
 
   /**
-   * @brief Create a new Compound in the remote database.
+   * @brief Create a new Flask in the remote database.
    *
-   * @param collection The collection to generate the compound in
-   * @param structures The initial list of structures in the compound.
+   * @param collection The collection to generate the Flask in
+   * @param structures The initial list of Structures in the Flask.
+   * @param compounds  The list of Compounds that are combined in the Flask.
    *
    * @throws MissingLinkedCollectionException If @p collection does not hold a collection
-   * @returns The new Compound instance.
+   * @returns The new Flask instance.
    */
-  static Compound create(const std::vector<ID>& structures, const CollectionPtr& collection);
+  static Flask create(const std::vector<ID>& structures, const std::vector<ID>& compounds, const CollectionPtr& collection);
   /**
-   * @brief Creates a new Compound in the remote database.
+   * @brief Creates a new Flask in the remote database.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
-   * @param structures The initial list of structures in the compound.
-   * @return ID        The ID of the newly inserted Compound.
+   * @param structures The initial list of Structures in the Flask.
+   * @param compounds  The list of Compounds that are combined in the Flask.
+   * @return ID        The ID of the newly inserted Flask.
    */
-  ID create(const std::vector<ID>& structures);
+  ID create(const std::vector<ID>& structures, const std::vector<ID>& compounds);
   /**
    * @brief Get the centroid structure.
    *
@@ -79,40 +80,40 @@ class Compound : public Object {
   //! Fetch linked centroid structure
   Structure getCentroid(const Manager& manager, const std::string& collection = Layout::DefaultCollection::structure) const;
   /**
-   * @brief Check if the compound is part of a given reaction (ID).
+   * @brief Check if the Flask is part of a given reaction (ID).
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the Reaction to be checked for.
-   * @return true  If the compound is part of the given Reaction (ID).
-   * @return false If the compound is not part of the given Reaction (ID).
+   * @return true  If the Flask is part of the given Reaction (ID).
+   * @return false If the Flask is not part of the given Reaction (ID).
    */
   bool hasReaction(const ID& id) const;
   /**
-   * @brief Add a Reaction to the list of known reaction of this compound.
+   * @brief Add a Reaction to the list of known reactions of this Flask.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the Reaction to be added.
    */
   void addReaction(const ID& id) const;
   /**
-   * @brief Removes a Reaction from the list of known reaction of this compound.
+   * @brief Removes a Reaction from the list of known reactions of this Flask.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the Reaction to be removed.
    */
   void removeReaction(const ID& id) const;
   /**
-   * @brief Checks for the amount of known reaction of the Compound.
+   * @brief Checks for the amount of known reactions of the Flask.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
-   * @return int The number of reactions linked to the Compound.
+   * @return int The number of reactions linked to the Flask.
    */
   int hasReactions() const;
   /**
    * @brief Get all known reactions.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
-   * @return std::vector<ID> The vector of all reaction ids.
+   * @return std::vector<ID> The vector of all reaction IDs.
    */
   std::vector<ID> getReactions() const;
   //! Fetch linked reactions
@@ -132,33 +133,33 @@ class Compound : public Object {
    */
   void clearReactions() const;
   /**
-   * @brief Check if the Compound holds the queried ID as a Structure.
+   * @brief Check if the Flask holds the queried ID as a Structure.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the Structure to be checked for.
-   * @return true  If the Structure ID is part of the Compound.
-   * @return false If the Structure ID is not part of the Compound.
+   * @return true  If the Structure ID is part of the Flask.
+   * @return false If the Structure ID is not part of the Flask.
    */
   bool hasStructure(const ID& id) const;
   /**
-   * @brief Add a Structure to the list of structures in this compound.
+   * @brief Add a Structure to the list of structures in this Flask.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the Structure to be added.
    */
   void addStructure(const ID& id) const;
   /**
-   * @brief Removes a structure from this compound.
+   * @brief Removes a structure from this Flask.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the Structure to be removed.
    */
   void removeStructure(const ID& id) const;
   /**
-   * @brief Checks for the amount of structures in this Compound.
+   * @brief Checks for the amount of structures in this Flask.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
-   * @return int The number of structures linked to the Compound.
+   * @return int The number of structures linked to the Flask.
    */
   int hasStructures() const;
   /**
@@ -184,9 +185,48 @@ class Compound : public Object {
    * @throws MissingIDException Thrown if the object does not have an ID.
    */
   void clearStructures() const;
+  /**
+   * @brief Check if the Flask holds the queried ID as a Compound.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param id The ID of the Compound to be checked for.
+   * @return true  If the Compound ID is part of the Flask.
+   * @return false If the Compound ID is not part of the Flask.
+   */
+  bool hasCompound(const ID& id) const;
+  /**
+   * @brief Checks for the number of Compounds in this Flask.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @return int The number of Compounds linked to the Flask.
+   */
+  int hasCompounds() const;
+  /**
+   * @brief Get the all stored Compounds.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @return std::vector<ID> The vector of all Compound IDs.
+   */
+  std::vector<ID> getCompounds() const;
+  //! Fetch all stored structures
+  std::vector<Compound> getCompounds(const Manager& manager,
+                                     const std::string& collection = Layout::DefaultCollection::compound) const;
+  /**
+   * @brief Set/replace all Compounds.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param ids The new Compounds.
+   */
+  void setCompounds(const std::vector<ID>& ids) const;
+  /**
+   * @brief Removes all linked Compounds.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   */
+  void clearCompounds() const;
 };
 
 } /* namespace Database */
 } /* namespace Scine */
 
-#endif /* DATABASE_COMPOUND_H_ */
+#endif /* DATABASE_FLASK_H_ */

@@ -9,6 +9,7 @@
 #include "Database/Collection.h"
 #include "Database/Manager.h"
 #include "Database/Objects/Compound.h"
+#include "Database/Objects/Flask.h"
 #include "Database/Objects/Reaction.h"
 #include "Database/Objects/Structure.h"
 #include <Database/Version.h>
@@ -23,6 +24,7 @@ struct PybindTypes {
   using PyReaction = pybind11::class_<Reaction, Object>;
   using PyStructure = pybind11::class_<Structure, Object>;
   using PyCompound = pybind11::class_<Compound, Object>;
+  using PyFlask = pybind11::class_<Flask, Object>;
 
   PybindTypes(pybind11::module& m)
     : collection(m, "Collection"),
@@ -30,7 +32,8 @@ struct PybindTypes {
       object(m, "Object"),
       reaction(m, "Reaction"),
       structure(m, "Structure"),
-      compound(m, "Compound") {
+      compound(m, "Compound"),
+      flask(m, "Flask") {
   }
 
   PyCollection collection;
@@ -39,6 +42,7 @@ struct PybindTypes {
   PyReaction reaction;
   PyStructure structure;
   PyCompound compound;
+  PyFlask flask;
 };
 
 /* Basic Database Classes */
@@ -56,6 +60,7 @@ void init_elementary_step(pybind11::module&);
 void init_structure_label(pybind11::module&);
 void init_structure(PybindTypes::PyStructure&);
 void init_compound(PybindTypes::PyCompound&);
+void init_flask(PybindTypes::PyFlask&);
 void init_properties(pybind11::module&);
 void init_credentials(pybind11::module&);
 void init_reaction(PybindTypes::PyReaction&);
@@ -99,6 +104,7 @@ PYBIND11_MODULE(scine_database, m) {
   init_elementary_step(m);
   init_structure_label(m);
   init_structure(types.structure);
+  init_flask(types.flask);
   init_properties(m);
   init_calculation(m);
   init_compound(types.compound);

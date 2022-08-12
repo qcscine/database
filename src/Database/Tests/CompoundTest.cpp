@@ -37,7 +37,7 @@ class CompoundTest : public Test {
     db.wipe();
   }
 };
-Credentials CompoundTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_CompoundTest");
+Credentials CompoundTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_CompoundTest");
 Manager CompoundTest::db;
 
 TEST_F(CompoundTest, Create) {

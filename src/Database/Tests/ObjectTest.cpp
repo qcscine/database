@@ -46,7 +46,7 @@ class ObjectTest : public Test {
     db.wipe();
   }
 };
-Credentials ObjectTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_ObjectTest");
+Credentials ObjectTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_ObjectTest");
 Manager ObjectTest::db;
 
 /// @brief A MockObject used to test public functions of the Object interface.

@@ -57,8 +57,8 @@ How to Cite
 -----------
 
 When publishing results obtained with the SCINE database wrapper, please cite the corresponding
-release as archived on `Zenodo <https://zenodo.org/>`_ (please use the DOI of the
-respective release).
+release as archived on `Zenodo <https://zenodo.org/record/6695495>`_ (DOI 10.5281/zenodo.6695495;
+please use the DOI of the respective release).
 
 In addition, we kindly request you to cite the following article when using the SCINE database wrapper:
 J. P. Unsleber, S. A. Grimmel, M. Reiher,

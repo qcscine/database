@@ -77,6 +77,8 @@ void init_structure_label(pybind11::module& m) {
   label.value("SURFACE_GUESS", Structure::LABEL::SURFACE_GUESS);
   label.value("SURFACE_OPTIMIZED", Structure::LABEL::SURFACE_OPTIMIZED);
   label.value("SURFACE_ADSORPTION_GUESS", Structure::LABEL::SURFACE_ADSORPTION_GUESS);
+  label.value("COMPLEX_OPTIMIZED", Structure::LABEL::COMPLEX_OPTIMIZED);
+  label.value("COMPLEX_GUESS", Structure::LABEL::COMPLEX_GUESS);
 }
 
 void init_structure(pybind11::class_<Structure, Object>& structure) {
@@ -84,9 +86,10 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
     Class referencing a molecular three-dimensional structure database object
 
     A Structure has the following relationships with other database objects:
-    - ``Compound``: A compound is a collection of one or more ``Structure``
+    - ``Aggregate``: An aggregate is a collection of one or more ``Structure``
       instances. Typically, structures are grouped by the criterion that they
-      represent the same molecule.
+      represent the same molecule or complex. They are grouped into
+      ``Compounds`` (single molecules) or ``Flasks`` (complexes).
     - ``Calculation``: A calculation will usually require one or more
       ``Structure`` instances as input.
     - ``Property``: These classes are results of a ``Calculation`` that each
@@ -125,13 +128,13 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
     >>> structures = manager.get_collection("structures")
     >>> compounds = manager.get_collection("compounds")
     >>> structure = Structure.make(atoms, charge=0, multiplicity=1, collection=structures)
-    >>> structure.compound_id is None
+    >>> structure.aggregate_id is None
     True
     >>> compound = Compound.make([structure.id()], compounds)
-    >>> structure.compound_id is None
+    >>> structure.aggregate_id is None
     True
-    >>> structure.compound_id = compound.id()  # Only now are they fully connected
-    >>> structure.compound_id is None
+    >>> structure.aggregate_id = compound.id()  # Only now are they fully connected
+    >>> structure.aggregate_id is None
     False
 
     ``Properties`` derived from a structure are referenced directly in the
@@ -259,6 +262,8 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
   structure.def("set_multiplicity", &Structure::setMultiplicity, pybind11::arg("multiplicity"));
   structure.def_property("multiplicity", &Structure::getMultiplicity, &Structure::setMultiplicity, "Spin multiplicity");
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   structure.def("get_compound", &Structure::getCompound);
   structure.def("set_compound", &Structure::setCompound, pybind11::arg("compound"));
   structure.def("has_compound", &Structure::hasCompound);
@@ -266,6 +271,15 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
   def_optional_property<Structure>(structure, "compound_id", std::mem_fn(&Structure::hasCompound),
                                    std::mem_fn(&Structure::getCompound), std::mem_fn(&Structure::setCompound),
                                    std::mem_fn(&Structure::clearCompound), "Linked compound id");
+#pragma GCC diagnostic pop
+
+  structure.def("get_aggregate", &Structure::getAggregate);
+  structure.def("set_aggregate", &Structure::setAggregate, pybind11::arg("aggregate"));
+  structure.def("has_aggregate", &Structure::hasAggregate);
+  structure.def("clear_aggregate", &Structure::clearAggregate);
+  def_optional_property<Structure>(structure, "aggregate_id", std::mem_fn(&Structure::hasAggregate),
+                                   std::mem_fn(&Structure::getAggregate), std::mem_fn(&Structure::setAggregate),
+                                   std::mem_fn(&Structure::clearAggregate), "Linked aggregate id");
 
   structure.def("has_property", pybind11::overload_cast<const std::string&>(&Structure::hasProperty, pybind11::const_),
                 pybind11::arg("key"));
@@ -285,6 +299,25 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
   structure.def("set_all_properties", &Structure::setAllProperties, pybind11::arg("properties"));
   structure.def("clear_all_properties", &Structure::clearAllProperties);
 
+  structure.def("has_calculation", pybind11::overload_cast<const std::string&>(&Structure::hasCalculation, pybind11::const_),
+                pybind11::arg("key"));
+  structure.def("has_calculation", pybind11::overload_cast<const ID&>(&Structure::hasCalculation, pybind11::const_),
+                pybind11::arg("id"));
+  structure.def("get_calculation", &Structure::getCalculation, pybind11::arg("key"));
+  structure.def("set_calculation", &Structure::setCalculation, pybind11::arg("key"), pybind11::arg("id"));
+  structure.def("add_calculation", &Structure::addCalculation, pybind11::arg("key"), pybind11::arg("id"));
+  structure.def("add_calculations", &Structure::addCalculations, pybind11::arg("key"), pybind11::arg("ids"));
+  structure.def("remove_calculation", &Structure::removeCalculation, pybind11::arg("key"), pybind11::arg("id"));
+  structure.def("set_calculations", &Structure::setCalculations, pybind11::arg("key"), pybind11::arg("ids"));
+  structure.def("get_calculations", &Structure::getCalculations, pybind11::arg("key"));
+  structure.def("query_calculations", &Structure::queryCalculations, pybind11::arg("key"), pybind11::arg("model"),
+                pybind11::arg("collection"));
+  structure.def("has_calculations", &Structure::hasCalculations, pybind11::arg("key"));
+  structure.def("clear_calculations", &Structure::clearCalculations, pybind11::arg("key"));
+  structure.def("get_all_calculations", &Structure::getAllCalculations);
+  structure.def("set_all_calculations", &Structure::setAllCalculations, pybind11::arg("calculations"));
+  structure.def("clear_all_calculations", &Structure::clearAllCalculations);
+
   structure.def("get_graph", &Structure::getGraph, pybind11::arg("key"));
   structure.def("set_graph", &Structure::setGraph, pybind11::arg("key"), pybind11::arg("graph"));
   structure.def("remove_graph", &Structure::removeGraph, pybind11::arg("key"));
@@ -301,4 +334,8 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
   def_optional_property<Structure>(structure, "comment", std::mem_fn(&Structure::hasComment),
                                    std::mem_fn(&Structure::getComment), std::mem_fn(&Structure::setComment),
                                    std::mem_fn(&Structure::clearComment), "Free-form comment on the structure");
+
+  structure.def("is_duplicate_of", &Structure::isDuplicateOf);
+  structure.def("set_as_duplicate_of", &Structure::setAsDuplicateOf, pybind11::arg("id"));
+  structure.def("clear_duplicate_ID", &Structure::clearDuplicateID);
 }

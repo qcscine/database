@@ -34,7 +34,8 @@ class DenseMatrixPropertyTest : public Test {
     db.wipe();
   }
 };
-Credentials DenseMatrixPropertyTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_DenseMatrixPropertyTest");
+Credentials DenseMatrixPropertyTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT),
+                                                 "unittest_db_DenseMatrixPropertyTest");
 Manager DenseMatrixPropertyTest::db;
 
 TEST_F(DenseMatrixPropertyTest, Create1) {

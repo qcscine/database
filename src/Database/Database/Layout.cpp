@@ -70,6 +70,8 @@ const std::map<std::string, StructureLabel> EnumMaps::str2label = {
   {"surface_guess", StructureLabel::SURFACE_GUESS},
   {"surface_optimized", StructureLabel::SURFACE_OPTIMIZED},
   {"surface_adsorption_guess", StructureLabel::SURFACE_ADSORPTION_GUESS},
+  {"complex_guess", StructureLabel::COMPLEX_GUESS},
+  {"complex_optimized", StructureLabel::COMPLEX_OPTIMIZED},
   {"irrelevant", StructureLabel::IRRELEVANT},
   {"duplicate", StructureLabel::DUPLICATE}
 };
@@ -89,6 +91,8 @@ const std::map<StructureLabel, std::string> EnumMaps::label2str = {
   {StructureLabel::SURFACE_GUESS , "surface_guess"},
   {StructureLabel::SURFACE_OPTIMIZED , "surface_optimized"},
   {StructureLabel::SURFACE_ADSORPTION_GUESS , "surface_adsorption_guess"},
+  {StructureLabel::COMPLEX_GUESS, "complex_guess"},
+  {StructureLabel::COMPLEX_OPTIMIZED, "complex_optimized"},
   {StructureLabel::IRRELEVANT, "irrelevant"},
   {StructureLabel::DUPLICATE, "duplicate"}
 };

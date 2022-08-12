@@ -1,21 +1,21 @@
 /**
- * @file Compound.cpp
+ * @file Flask.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
  *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
 /* Internal Includes*/
-#include "Database/Objects/Compound.h"
+#include "Database/Objects/Flask.h"
 #include "Database/Collection.h"
 #include "Database/Exceptions.h"
 #include "Database/Manager.h"
+#include "Database/Objects/Compound.h"
 #include "Database/Objects/Impl/Fields.h"
 #include "Database/Objects/Reaction.h"
 #include "Database/Objects/Structure.h"
 /* External Includes */
 #include <bsoncxx/builder/stream/document.hpp>
-#include <iostream>
 #include <mongocxx/collection.hpp>
 
 using bsoncxx::builder::stream::close_array;
@@ -29,11 +29,15 @@ namespace Scine {
 namespace Database {
 namespace {
 
-ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& collection) {
-  // Build structure array
+ID createImpl(const std::vector<ID>& structures, const std::vector<ID>& compounds, const Flask::CollectionPtr& collection) {
+  // Build arrays
   bsoncxx::builder::basic::array structureArray;
   for (const auto& id : structures) {
     structureArray.append(id.bsoncxx());
+  }
+  bsoncxx::builder::basic::array compoundArray;
+  for (const auto& id : compounds) {
+    compoundArray.append(id.bsoncxx());
   }
 
   auto now = bsoncxx::types::b_date(std::chrono::system_clock::now());
@@ -42,8 +46,9 @@ ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& 
                         << "_lastmodified" << now
                         << "analysis_disabled" << false
                         << "exploration_disabled" << false
-                        << "_objecttype" << Compound::objecttype
+                        << "_objecttype" << Flask::objecttype
                         << "structures" << structureArray
+                        << "compounds" << compoundArray
                         << "reactions" << open_array << close_array
                         << finalize;
   // clang-format on
@@ -53,26 +58,26 @@ ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& 
 
 } // namespace
 
-constexpr const char* Compound::objecttype;
+constexpr const char* Flask::objecttype;
 
-Compound Compound::create(const std::vector<ID>& structures, const CollectionPtr& collection) {
+Flask Flask::create(const std::vector<ID>& structures, const std::vector<ID>& compounds, const CollectionPtr& collection) {
   if (!collection) {
     throw Exceptions::MissingCollectionException();
   }
 
-  return Compound{createImpl(structures, collection), collection};
+  return Flask{createImpl(structures, compounds, collection), collection};
 }
 
-ID Compound::create(const std::vector<ID>& structures) {
+ID Flask::create(const std::vector<ID>& structures, const std::vector<ID>& compounds) {
   if (!_collection) {
     throw Exceptions::MissingLinkedCollectionException();
   }
 
-  this->_id = std::make_unique<ID>(createImpl(structures, _collection));
+  this->_id = std::make_unique<ID>(createImpl(structures, compounds, _collection));
   return *this->_id;
 }
 
-ID Compound::getCentroid() const {
+ID Flask::getCentroid() const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -88,18 +93,33 @@ ID Compound::getCentroid() const {
   return array[0].get_oid().value;
 }
 
-Structure Compound::getCentroid(const Manager& manager, const std::string& collection) const {
+Structure Flask::getCentroid(const Manager& manager, const std::string& collection) const {
   return manager.getCollection(collection)->get<Structure>(getCentroid());
 }
 
-bool Compound::hasReaction(const ID& id) const {
+bool Flask::hasReaction(const ID& id) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
-  const auto reactions = this->getReactions();
-  return std::find(reactions.begin(), reactions.end(), id) != reactions.end();
+  /* selection:
+   * { $and : [
+   *   { _id : <ID> },
+   *   { "reactions" : { $elemMatch : { $eq : <id> }}} }
+   *  ]}
+   */
+  // clang-format off
+  auto selection = document{} << "$and" << open_array
+                              << open_document << "_id" << this->id().bsoncxx() << close_document
+                              << open_document << "reactions" << open_document
+                                << "$elemMatch" << open_document << "$eq" << id.bsoncxx()
+                                << close_document << close_document << close_document
+                              << close_array
+                              << finalize;
+  // clang-format on
+  auto optional = _collection->mongocxx().find_one(selection.view());
+  return static_cast<bool>(optional);
 }
 
-void Compound::addReaction(const ID& id) const {
+void Flask::addReaction(const ID& id) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -115,7 +135,7 @@ void Compound::addReaction(const ID& id) const {
   _collection->mongocxx().find_one_and_update(selection.view(), update.view());
 }
 
-void Compound::removeReaction(const ID& id) const {
+void Flask::removeReaction(const ID& id) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -131,15 +151,15 @@ void Compound::removeReaction(const ID& id) const {
   _collection->mongocxx().find_one_and_update(selection.view(), update.view());
 }
 
-int Compound::hasReactions() const {
+int Flask::hasReactions() const {
   return Fields::get<std::vector<ID>>(*this, "reactions").size();
 }
 
-std::vector<ID> Compound::getReactions() const {
+std::vector<ID> Flask::getReactions() const {
   return Fields::get<std::vector<ID>>(*this, "reactions");
 }
 
-std::vector<Reaction> Compound::getReactions(const Manager& manager, const std::string& collection) const {
+std::vector<Reaction> Flask::getReactions(const Manager& manager, const std::string& collection) const {
   auto ids = getReactions();
   std::vector<Reaction> reactions;
   auto reactionCollection = manager.getCollection(collection);
@@ -150,22 +170,37 @@ std::vector<Reaction> Compound::getReactions(const Manager& manager, const std::
   return reactions;
 }
 
-void Compound::setReactions(const std::vector<ID>& ids) const {
+void Flask::setReactions(const std::vector<ID>& ids) const {
   Fields::set(*this, "reactions", ids);
 }
 
-void Compound::clearReactions() const {
+void Flask::clearReactions() const {
   setReactions({});
 }
 
-bool Compound::hasStructure(const ID& id) const {
+bool Flask::hasStructure(const ID& id) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
-  const auto structures = this->getStructures();
-  return std::find(structures.begin(), structures.end(), id) != structures.end();
+  /* selection:
+   * { $and : [
+   *   { _id : <ID> },
+   *   { "structures" : { $elemMatch : { $eq : <id> }}} }
+   *  ]}
+   */
+  // clang-format off
+  auto selection = document{} << "$and" << open_array
+                              << open_document << "_id" << this->id().bsoncxx() << close_document
+                              << open_document << "structures" << open_document
+                                << "$elemMatch" << open_document << "$eq" << id.bsoncxx()
+                                << close_document << close_document << close_document
+                              << close_array
+                              << finalize;
+  // clang-format on
+  auto optional = _collection->mongocxx().find_one(selection.view());
+  return static_cast<bool>(optional);
 }
 
-void Compound::addStructure(const ID& id) const {
+void Flask::addStructure(const ID& id) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -181,7 +216,7 @@ void Compound::addStructure(const ID& id) const {
   _collection->mongocxx().find_one_and_update(selection.view(), update.view());
 }
 
-void Compound::removeStructure(const ID& id) const {
+void Flask::removeStructure(const ID& id) const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -197,31 +232,80 @@ void Compound::removeStructure(const ID& id) const {
   _collection->mongocxx().find_one_and_update(selection.view(), update.view());
 }
 
-int Compound::hasStructures() const {
+int Flask::hasStructures() const {
   return Fields::get<std::vector<ID>>(*this, "structures").size();
 }
 
-std::vector<ID> Compound::getStructures() const {
+std::vector<ID> Flask::getStructures() const {
   return Fields::get<std::vector<ID>>(*this, "structures");
 }
 
-std::vector<Structure> Compound::getStructures(const Manager& manager, const std::string& collection) const {
+std::vector<Structure> Flask::getStructures(const Manager& manager, const std::string& collection) const {
   auto ids = getStructures();
   std::vector<Structure> structures;
-  auto structureCollection = manager.getCollection(collection);
+  auto reactionCollection = manager.getCollection(collection);
   structures.reserve(ids.size());
   for (auto& id : ids) {
-    structures.emplace_back(std::move(id), structureCollection);
+    structures.emplace_back(std::move(id), reactionCollection);
   }
   return structures;
 }
 
-void Compound::setStructures(const std::vector<ID>& ids) const {
+void Flask::setStructures(const std::vector<ID>& ids) const {
   Fields::set(*this, "structures", ids);
 }
 
-void Compound::clearStructures() const {
+void Flask::clearStructures() const {
   setStructures({});
+}
+
+bool Flask::hasCompound(const ID& id) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  /* selection:
+   * { $and : [
+   *   { _id : <ID> },
+   *   { "compounds" : { $elemMatch : { $eq : <id> }}} }
+   *  ]}
+   */
+  // clang-format off
+  auto selection = document{} << "$and" << open_array
+                              << open_document << "_id" << this->id().bsoncxx() << close_document
+                              << open_document << "compounds" << open_document
+                                << "$elemMatch" << open_document << "$eq" << id.bsoncxx()
+                                << close_document << close_document << close_document
+                              << close_array
+                              << finalize;
+  // clang-format on
+  auto optional = _collection->mongocxx().find_one(selection.view());
+  return static_cast<bool>(optional);
+}
+
+int Flask::hasCompounds() const {
+  return Fields::get<std::vector<ID>>(*this, "compounds").size();
+}
+
+std::vector<Compound> Flask::getCompounds(const Manager& manager, const std::string& collection) const {
+  auto ids = getCompounds();
+  std::vector<Compound> compounds;
+  auto compoundCollection = manager.getCollection(collection);
+  compounds.reserve(ids.size());
+  for (auto& id : ids) {
+    compounds.emplace_back(std::move(id), compoundCollection);
+  }
+  return compounds;
+}
+
+std::vector<ID> Flask::getCompounds() const {
+  return Fields::get<std::vector<ID>>(*this, "compounds");
+}
+
+void Flask::setCompounds(const std::vector<ID>& ids) const {
+  Fields::set(*this, "compounds", ids);
+}
+
+void Flask::clearCompounds() const {
+  setCompounds({});
 }
 
 } /* namespace Database */

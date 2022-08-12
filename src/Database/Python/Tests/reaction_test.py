@@ -14,7 +14,8 @@ class ReactionTest(unittest.TestCase):
     def setUp(self):
         self.manager = db.Manager()
         self.manager.credentials.hostname = os.environ.get(
-            'TEST_MONGO_DB_IP') or '127.0.0.1'
+            'TEST_MONGO_DB_IP', '127.0.0.1')
+        self.manager.credentials.port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         self.manager.credentials.database_name = "unittest_db_ReactionTest"
         self.manager.connect()
         self.manager.init()
@@ -39,7 +40,7 @@ class ReactionTest(unittest.TestCase):
         coll = self.manager.get_collection("reactions")
         id1 = db.ID()
         id2 = db.ID()
-        reaction = db.Reaction.make([id1], [id2], coll)
+        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND],  [db.CompoundOrFlask.FLASK])
         assert reaction.has_id()
 
         # Checks
@@ -51,11 +52,12 @@ class ReactionTest(unittest.TestCase):
         id4 = db.ID()
         id5 = db.ID()
         id6 = db.ID()
-        reaction.add_reactant(id3, db.Side.LHS)
+        reaction.add_reactant(id3, db.Side.LHS, db.CompoundOrFlask.FLASK)
         assert reaction.has_reactant(id3) == db.Side.LHS
         assert 2 == reaction.has_reactants()[0]
         assert 1 == reaction.has_reactants()[1]
         reactants = reaction.get_reactants(db.Side.LHS)
+        assert reaction.get_reactant_type(id3) == db.CompoundOrFlask.FLASK
         assert reactants[0][0], id1
         assert reactants[0][1], id3
         assert len(reactants[1]) == 0
@@ -71,7 +73,7 @@ class ReactionTest(unittest.TestCase):
         coll = self.manager.get_collection("reactions")
         id1 = db.ID()
         id2 = db.ID()
-        reaction = db.Reaction.make([id1], [id2], coll)
+        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND],  [db.CompoundOrFlask.FLASK])
         assert reaction.has_id()
 
         # Checks
@@ -83,11 +85,12 @@ class ReactionTest(unittest.TestCase):
         id4 = db.ID()
         id5 = db.ID()
         id6 = db.ID()
-        reaction.add_reactant(id3, db.Side.RHS)
+        reaction.add_reactant(id3, db.Side.RHS, db.CompoundOrFlask.FLASK)
         assert reaction.has_reactant(id3) == db.Side.RHS
         assert 1 == reaction.has_reactants()[0]
         assert 2 == reaction.has_reactants()[1]
         reactants = reaction.get_reactants(db.Side.RHS)
+        assert reaction.get_reactant_type(id3) == db.CompoundOrFlask.FLASK
         assert reactants[1][0], id1
         assert reactants[1][1], id3
         assert len(reactants[0]) == 0
@@ -103,7 +106,7 @@ class ReactionTest(unittest.TestCase):
         coll = self.manager.get_collection("reactions")
         id1 = db.ID()
         id2 = db.ID()
-        reaction = db.Reaction.make([id1], [id2], coll)
+        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND],  [db.CompoundOrFlask.FLASK])
         assert reaction.has_id()
 
         # Checks
@@ -115,8 +118,9 @@ class ReactionTest(unittest.TestCase):
         id4 = db.ID()
         id5 = db.ID()
         id6 = db.ID()
-        reaction.add_reactant(id3, db.Side.BOTH)
+        reaction.add_reactant(id3, db.Side.BOTH, db.CompoundOrFlask.FLASK)
         assert reaction.has_reactant(id3) == db.Side.BOTH
+        assert reaction.get_reactant_type(id3) == db.CompoundOrFlask.FLASK
         assert 2 == reaction.has_reactants()[0]
         assert 2 == reaction.has_reactants()[1]
         reactants = reaction.get_reactants(db.Side.BOTH)
@@ -141,7 +145,7 @@ class ReactionTest(unittest.TestCase):
         self.assertRaises(
             RuntimeError, lambda: reaction.get_reactants(db.Side.BOTH))
         self.assertRaises(
-            RuntimeError, lambda: reaction.add_reactant(db.ID(), db.Side.BOTH))
+            RuntimeError, lambda: reaction.add_reactant(db.ID(), db.Side.BOTH, db.CompoundOrFlask.COMPOUND))
         self.assertRaises(
             RuntimeError, lambda: reaction.set_reactants([], db.Side.BOTH))
         self.assertRaises(
@@ -158,7 +162,7 @@ class ReactionTest(unittest.TestCase):
         self.assertRaises(
             RuntimeError, lambda: reaction.get_reactants(db.Side.BOTH))
         self.assertRaises(
-            RuntimeError, lambda: reaction.add_reactant(db.ID(), db.Side.BOTH))
+            RuntimeError, lambda: reaction.add_reactant(db.ID(), db.Side.BOTH, db.CompoundOrFlask.COMPOUND))
         self.assertRaises(
             RuntimeError, lambda: reaction.set_reactants([], db.Side.BOTH))
         self.assertRaises(

@@ -40,11 +40,13 @@ enum class StructureLabel : unsigned {
   SURFACE_GUESS = 12,
   SURFACE_OPTIMIZED = 13,
   SURFACE_ADSORPTION_GUESS = 14,
+  COMPLEX_GUESS = 15,
+  COMPLEX_OPTIMIZED = 16,
   IRRELEVANT = 99,
   DUPLICATE = 100
 };
 
-enum class ElementaryStepType { REGULAR = 0, BARRIERLESS = 1 };
+enum class ElementaryStepType : unsigned { REGULAR = 0, BARRIERLESS = 1 };
 
 namespace Layout {
 
@@ -55,8 +57,9 @@ struct DefaultCollection {
   constexpr static const char* property = "properties";
   constexpr static const char* reaction = "reactions";
   constexpr static const char* compound = "compounds";
+  constexpr static const char* flask = "flasks";
 
-  constexpr static std::array<const char*, 6> all{{structure, calculation, elementaryStep, property, reaction, compound}};
+  constexpr static std::array<const char*, 7> all{{structure, calculation, elementaryStep, property, reaction, compound, flask}};
 };
 
 struct InternalCollection {

@@ -40,7 +40,7 @@ class CalculationTest : public Test {
     db.wipe();
   }
 };
-Credentials CalculationTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_CalculationTest");
+Credentials CalculationTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_CalculationTest");
 Manager CalculationTest::db;
 
 TEST_F(CalculationTest, Creation) {
@@ -710,6 +710,20 @@ TEST_F(CalculationTest, RuntimeFailsID) {
   ASSERT_THROW(calc.getRuntime(), Exceptions::MissingIDException);
   ASSERT_THROW(calc.setRuntime(1.0), Exceptions::MissingIDException);
   ASSERT_THROW(calc.clearRuntime(), Exceptions::MissingIDException);
+}
+
+TEST_F(CalculationTest, LargeResultList) {
+  ID s1;
+  auto coll = db.getCollection("calculations");
+  Calculation calc =
+      Calculation::create(Model("dft", "pbe", "def2-svp", "restricted"), Calculation::Job("geo_opt"), {s1}, coll);
+  auto results = calc.getResults();
+  std::vector<ID> large_id_list(60000);
+  calc.setStatus(CalculationStatus::COMPLETE);
+  results.elementarySteps = large_id_list;
+  results.properties = large_id_list;
+  results.structures = large_id_list;
+  ASSERT_NO_THROW(calc.setResults(results));
 }
 
 } /* namespace Tests */

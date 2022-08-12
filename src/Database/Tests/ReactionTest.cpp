@@ -8,7 +8,7 @@
 #include <Database/Exceptions.h>
 #include <Database/Manager.h>
 #include <Database/Objects/Reaction.h>
-#include <Database/Objects/ReactionSide.h>
+#include <Database/Objects/ReactionEnums.h>
 #include <gmock/gmock.h>
 
 using namespace testing;
@@ -36,13 +36,15 @@ class ReactionTest : public Test {
     db.wipe();
   }
 };
-Credentials ReactionTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_ReactionTest");
+Credentials ReactionTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT), "unittest_db_ReactionTest");
 Manager ReactionTest::db;
 
 TEST_F(ReactionTest, Create) {
   auto coll = db.getCollection("reactions");
   ID id1, id2;
   Reaction reaction = Reaction::create({id1}, {id2}, coll);
+  ASSERT_EQ(std::get<0>(reaction.hasReactants()), 1);
+  ASSERT_EQ(std::get<1>(reaction.hasReactants()), 1);
   ASSERT_EQ(std::get<0>(reaction.getReactants(SIDE::BOTH))[0], id1);
   ASSERT_EQ(std::get<1>(reaction.getReactants(SIDE::BOTH))[0], id2);
 }
@@ -51,13 +53,18 @@ TEST_F(ReactionTest, ReactantLHS) {
   // Basic setup
   auto coll = db.getCollection("reactions");
   ID id1, id2, id3, id4, id5, id6;
-  Reaction reaction = Reaction::create({id1}, {id2}, coll);
+  Reaction reaction = Reaction::create({id1}, {id2}, coll, {COMPOUND_OR_FLASK::COMPOUND}, {COMPOUND_OR_FLASK::FLASK});
   // Checks
   ASSERT_EQ(reaction.hasReactant(id1), SIDE::LHS);
   ASSERT_EQ(reaction.hasReactant(id2), SIDE::RHS);
   ASSERT_EQ(1, std::get<0>(reaction.hasReactants()));
   ASSERT_EQ(1, std::get<1>(reaction.hasReactants()));
-  reaction.addReactant(id3, SIDE::LHS);
+  ASSERT_EQ(COMPOUND_OR_FLASK::COMPOUND, std::get<0>(reaction.getReactantTypes(SIDE::LHS))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, std::get<1>(reaction.getReactantTypes(SIDE::RHS))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::COMPOUND, std::get<0>(reaction.getReactantTypes(SIDE::BOTH))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, std::get<1>(reaction.getReactantTypes(SIDE::BOTH))[0]);
+  reaction.addReactant(id3, SIDE::LHS, COMPOUND_OR_FLASK::FLASK);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, reaction.getReactantType(id3));
   ASSERT_EQ(reaction.hasReactant(id3), SIDE::LHS);
   ASSERT_EQ(2, std::get<0>(reaction.hasReactants()));
   ASSERT_EQ(1, std::get<1>(reaction.hasReactants()));
@@ -77,13 +84,18 @@ TEST_F(ReactionTest, ReactantRHS) {
   // Basic setup
   auto coll = db.getCollection("reactions");
   ID id1, id2, id3, id4, id5, id6;
-  Reaction reaction = Reaction::create({id1}, {id2}, coll);
+  Reaction reaction = Reaction::create({id1}, {id2}, coll, {COMPOUND_OR_FLASK::COMPOUND}, {COMPOUND_OR_FLASK::FLASK});
   // Checks
   ASSERT_EQ(reaction.hasReactant(id1), SIDE::LHS);
   ASSERT_EQ(reaction.hasReactant(id2), SIDE::RHS);
   ASSERT_EQ(1, std::get<0>(reaction.hasReactants()));
   ASSERT_EQ(1, std::get<1>(reaction.hasReactants()));
-  reaction.addReactant(id3, SIDE::RHS);
+  ASSERT_EQ(COMPOUND_OR_FLASK::COMPOUND, std::get<0>(reaction.getReactantTypes(SIDE::LHS))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, std::get<1>(reaction.getReactantTypes(SIDE::RHS))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::COMPOUND, std::get<0>(reaction.getReactantTypes(SIDE::BOTH))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, std::get<1>(reaction.getReactantTypes(SIDE::BOTH))[0]);
+  reaction.addReactant(id3, SIDE::RHS, COMPOUND_OR_FLASK::FLASK);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, reaction.getReactantType(id3));
   ASSERT_EQ(reaction.hasReactant(id3), SIDE::RHS);
   ASSERT_EQ(1, std::get<0>(reaction.hasReactants()));
   ASSERT_EQ(2, std::get<1>(reaction.hasReactants()));
@@ -103,13 +115,18 @@ TEST_F(ReactionTest, ReactantBOTH) {
   // Basic setup
   auto coll = db.getCollection("reactions");
   ID id1, id2, id3, id4, id5, id6;
-  Reaction reaction = Reaction::create({id1}, {id2}, coll);
+  Reaction reaction = Reaction::create({id1}, {id2}, coll, {COMPOUND_OR_FLASK::COMPOUND}, {COMPOUND_OR_FLASK::FLASK});
   // Checks
   ASSERT_EQ(reaction.hasReactant(id1), SIDE::LHS);
   ASSERT_EQ(reaction.hasReactant(id2), SIDE::RHS);
   ASSERT_EQ(1, std::get<0>(reaction.hasReactants()));
   ASSERT_EQ(1, std::get<1>(reaction.hasReactants()));
-  reaction.addReactant(id3, SIDE::BOTH);
+  ASSERT_EQ(COMPOUND_OR_FLASK::COMPOUND, std::get<0>(reaction.getReactantTypes(SIDE::LHS))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, std::get<1>(reaction.getReactantTypes(SIDE::RHS))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::COMPOUND, std::get<0>(reaction.getReactantTypes(SIDE::BOTH))[0]);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, std::get<1>(reaction.getReactantTypes(SIDE::BOTH))[0]);
+  reaction.addReactant(id3, SIDE::BOTH, COMPOUND_OR_FLASK::FLASK);
+  ASSERT_EQ(COMPOUND_OR_FLASK::FLASK, reaction.getReactantType(id3));
   ASSERT_EQ(reaction.hasReactant(id3), SIDE::BOTH);
   ASSERT_EQ(2, std::get<0>(reaction.hasReactants()));
   ASSERT_EQ(2, std::get<1>(reaction.hasReactants()));
@@ -139,6 +156,8 @@ TEST_F(ReactionTest, ReactantFails1) {
   ASSERT_THROW(reaction.setReactants({}, SIDE::BOTH), Exceptions::MissingLinkedCollectionException);
   ASSERT_THROW(reaction.removeReactant(id, SIDE::BOTH), Exceptions::MissingLinkedCollectionException);
   ASSERT_THROW(reaction.clearReactants(SIDE::BOTH), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(reaction.getReactantType(id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(reaction.getReactantTypes(SIDE::BOTH), Exceptions::MissingLinkedCollectionException);
 }
 
 TEST_F(ReactionTest, ReactantFails2) {
@@ -153,6 +172,8 @@ TEST_F(ReactionTest, ReactantFails2) {
   ASSERT_THROW(reaction.setReactants({}, SIDE::BOTH), Exceptions::MissingIDException);
   ASSERT_THROW(reaction.removeReactant(id, SIDE::BOTH), Exceptions::MissingIDException);
   ASSERT_THROW(reaction.clearReactants(SIDE::BOTH), Exceptions::MissingIDException);
+  ASSERT_THROW(reaction.getReactantType(id), Exceptions::MissingIDException);
+  ASSERT_THROW(reaction.getReactantTypes(SIDE::BOTH), Exceptions::MissingIDException);
 }
 
 TEST_F(ReactionTest, ElementaryStep) {

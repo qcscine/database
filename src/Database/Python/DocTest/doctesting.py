@@ -14,7 +14,8 @@ from typing import Dict, Any
 
 def db_testglobs() -> Dict[str, Any]:
     manager = db.Manager()
-    manager.credentials.hostname = os.environ.get('TEST_MONGO_DB_IP') or '127.0.0.1'
+    manager.credentials.hostname = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+    manager.credentials.port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
     manager.credentials.database_name = "scine-db-doctest"
     try:
         manager.wipe(True)  # Remote wipe to delete old dbs of the same name

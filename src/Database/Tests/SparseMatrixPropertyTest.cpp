@@ -35,7 +35,8 @@ class SparseMatrixPropertyTest : public Test {
     db.wipe();
   }
 };
-Credentials SparseMatrixPropertyTest::credentials(TEST_MONGO_DB_IP, 27017, "unittest_db_SparseMatrixPropertyTest");
+Credentials SparseMatrixPropertyTest::credentials(TEST_MONGO_DB_IP, std::atoi(TEST_MONGO_DB_PORT),
+                                                  "unittest_db_SparseMatrixPropertyTest");
 Manager SparseMatrixPropertyTest::db;
 
 TEST_F(SparseMatrixPropertyTest, Create1) {

@@ -538,3 +538,262 @@ class StructureTest(unittest.TestCase):
             RuntimeError, lambda: structure.set_all_properties({"key": [db.ID()]}))
         self.assertRaises(
             RuntimeError, lambda: structure.clear_all_properties())
+
+    def test_calculation_one(self):
+        # Setup
+        model = db.Model("dft", "pbe", "def2-svp")
+        coll = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, coll)
+        assert structure.has_id()
+
+        # Check
+        id1 = db.ID()
+        id2 = db.ID()
+        assert not structure.has_calculation("hessian")
+        assert not structure.has_calculation(id1)
+        structure.set_calculation("hessian", id1)
+        assert structure.has_calculation("hessian")
+        assert structure.has_calculation(id1)
+        assert not structure.has_calculation(id2)
+        assert id1 == structure.get_calculation("hessian")
+        structure.add_calculation("hessian", id2)
+        assert structure.has_calculation(id2)
+        self.assertRaises(
+            RuntimeError, lambda: structure.get_calculation("hessian"))
+        structure.remove_calculation("hessian", id1)
+        assert structure.has_calculation(id2)
+        assert not structure.has_calculation(id1)
+
+    def test_calculation_two(self):
+        # Setup
+        model = db.Model("dft", "pbe", "def2-svp")
+        coll = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, coll)
+        assert structure.has_id()
+
+        # Check
+        id1 = db.ID()
+        id2 = db.ID()
+        id3 = db.ID()
+        assert 0 == structure.has_calculations("hessian")
+        structure.set_calculations("hessian", [id1, id2])
+        assert 2 == structure.has_calculations("hessian")
+        assert id1 == structure.get_calculations("hessian")[0]
+        assert id2 == structure.get_calculations("hessian")[1]
+        structure.set_calculations("hessian", [id3])
+        assert id3 == structure.get_calculations("hessian")[0]
+        assert 1 == structure.has_calculations("hessian")
+        structure.clear_calculations("hessian")
+        assert 0 == structure.has_calculations("hessian")
+
+    def test_calculation_three(self):
+        # Setup
+        model = db.Model("dft", "pbe", "def2-svp")
+        coll = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, coll)
+        assert structure.has_id()
+
+        # Check
+        prop1 = {
+            "electronic_energy": [db.ID(), db.ID(), db.ID()],
+            "hessian": [db.ID(), db.ID()],
+            "gradients": [db.ID(), db.ID()],
+        }
+        prop2 = {
+            "mulliken_charges": [db.ID(), db.ID()],
+            "gradients": [db.ID(), db.ID()],
+        }
+        assert 0 == structure.has_calculations("electronic_energy")
+        assert 0 == structure.has_calculations("mulliken_charges")
+        assert 0 == structure.has_calculations("hessian")
+        assert 0 == structure.has_calculations("gradients")
+        structure.set_all_calculations(prop1)
+        ret1 = structure.get_all_calculations()
+        assert prop1["electronic_energy"][0] == ret1["electronic_energy"][0]
+        assert prop1["electronic_energy"][2] == ret1["electronic_energy"][2]
+        assert prop1["hessian"][0] == ret1["hessian"][0]
+        assert prop1["hessian"][1] == ret1["hessian"][1]
+        assert prop1["gradients"][0] == ret1["gradients"][0]
+        structure.set_all_calculations(prop2)
+        ret2 = structure.get_all_calculations()
+        assert prop2["mulliken_charges"][0] == ret2["mulliken_charges"][0]
+        assert prop2["mulliken_charges"][1] == ret2["mulliken_charges"][1]
+        assert prop2["gradients"][0] == ret2["gradients"][0]
+        assert prop2["gradients"][1] == ret2["gradients"][1]
+        structure.clear_all_calculations()
+        assert 0 == structure.has_calculations("electronic_energy")
+        assert 0 == structure.has_calculations("mulliken_charges")
+        assert 0 == structure.has_calculations("hessian")
+        assert 0 == structure.has_calculations("gradients")
+
+    def test_calculation_four(self):
+        # Setup
+        model = db.Model("dft", "pbe", "def2-svp")
+        structures = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, structures)
+        assert structure.has_id()
+        model1 = db.Model("dft", "pbe", "def2-svp")
+        model1.program = "serenity"
+        model2 = db.Model("am1", "am1", "")
+        model2.program = "sparrow"
+        calculations = self.manager.get_collection("calculations")
+        sid = structure.get_id()
+        job = db.Job("test")
+        c1 = db.Calculation.make(model1, job, [sid], calculations)
+        c2 = db.Calculation.make(model2, job, [sid], calculations)
+        c3 = db.Calculation.make(model2, job, [sid], calculations)
+        structure.add_calculation(job.order, c1.id())
+        structure.add_calculation(job.order, c2.id())
+        structure.add_calculation(job.order, c3.id())
+
+        # Checks
+        none = db.Model("dft", "sdfasdf", "asdf")
+        ret0 = structure.query_calculations(
+            job.order, none, calculations)
+        assert 0 == len(ret0)
+        ret1 = structure.query_calculations(
+            job.order, model1, calculations)
+        assert 1 == len(ret1)
+        ret2 = structure.query_calculations(
+            job.order, model2, calculations)
+        assert 2 == len(ret2)
+        any_dft = db.Model("dft", "any", "any")
+        ret3 = structure.query_calculations(
+            job.order, any_dft, calculations)
+        assert 1 == len(ret3)
+        any_m = db.Model("any", "any", "any")
+        ret4 = structure.query_calculations(
+            job.order, any_m, calculations)
+        assert 1 == len(ret4)
+        ret5 = structure.query_calculations(
+            "none_existing_key", none, calculations)
+        assert 0 == len(ret5)
+
+    def test_calculation_five(self):
+        # Setup
+        model = db.Model("dft", "pbe", "def2-svp")
+        structures = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, structures)
+        assert structure.has_id()
+        model1 = db.Model("dft", "pbe", "def2-svp")
+        model1.program = "serenity"
+        model2 = db.Model("am1", "am1", "")
+        model2.program = "sparrow"
+        calculations = self.manager.get_collection("calculations")
+        sid = structure.get_id()
+        job = db.Job("test")
+        c1 = db.Calculation.make(model1, job, [sid], calculations)
+        c2 = db.Calculation.make(model2, job, [sid], calculations)
+        c3 = db.Calculation.make(model2, job, [sid], calculations)
+        structure.add_calculations(job.order, [c1.id(), c2.id(), c3.id()])
+
+        # Checks
+        none = db.Model("dft", "sdfasdf", "asdf")
+        ret0 = structure.query_calculations(
+            job.order, none, calculations)
+        assert 0 == len(ret0)
+        ret1 = structure.query_calculations(
+            job.order, model1, calculations)
+        assert 1 == len(ret1)
+        ret2 = structure.query_calculations(
+            job.order, model2, calculations)
+        assert 2 == len(ret2)
+        any_dft = db.Model("dft", "any", "any")
+        ret3 = structure.query_calculations(
+            job.order, any_dft, calculations)
+        assert 1 == len(ret3)
+        any_m = db.Model("any", "any", "any")
+        ret4 = structure.query_calculations(
+            job.order, any_m, calculations)
+        assert 1 == len(ret4)
+        ret5 = structure.query_calculations(
+            "none_existing_key", none, calculations)
+        assert 0 == len(ret5)
+
+    def test_calculation_fails_collection(self):
+        coll = self.manager.get_collection("structures")
+        structure = db.Structure()
+        model = db.Model("dft", "pbe", "def2-svp")
+        self.assertRaises(RuntimeError, lambda: structure.has_calculation("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.has_calculation(db.ID()))
+        self.assertRaises(RuntimeError, lambda: structure.get_calculation("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.set_calculation("key", db.ID()))
+        self.assertRaises(
+            RuntimeError, lambda: structure.add_calculation("key", db.ID()))
+        self.assertRaises(
+            RuntimeError, lambda: structure.add_calculations("key", [db.ID(), db.ID()]))
+        self.assertRaises(
+            RuntimeError, lambda: structure.remove_calculation("key", db.ID()))
+        self.assertRaises(
+            RuntimeError, lambda: structure.set_calculations("key", []))
+        self.assertRaises(
+            RuntimeError, lambda: structure.get_calculations("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.has_calculations("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.clear_calculations("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.query_calculations("key", model, coll))
+        self.assertRaises(RuntimeError, lambda: structure.get_all_calculations())
+        self.assertRaises(
+            RuntimeError, lambda: structure.set_all_calculations({"key": [db.ID()]}))
+        self.assertRaises(
+            RuntimeError, lambda: structure.clear_all_calculations())
+
+    def test_calculation_fails_id(self):
+        coll = self.manager.get_collection("structures")
+        structure = db.Structure()
+        structure.link(coll)
+        model = db.Model("dft", "pbe", "def2-svp")
+        self.assertRaises(RuntimeError, lambda: structure.has_calculation("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.has_calculation(db.ID()))
+        self.assertRaises(RuntimeError, lambda: structure.get_calculation("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.set_calculation("key", db.ID()))
+        self.assertRaises(
+            RuntimeError, lambda: structure.add_calculation("key", db.ID()))
+        self.assertRaises(
+            RuntimeError, lambda: structure.remove_calculation("key", db.ID()))
+        self.assertRaises(
+            RuntimeError, lambda: structure.set_calculations("key", []))
+        self.assertRaises(
+            RuntimeError, lambda: structure.get_calculations("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.has_calculations("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.clear_calculations("key"))
+        self.assertRaises(
+            RuntimeError, lambda: structure.query_calculations("key", model, coll))
+        self.assertRaises(RuntimeError, lambda: structure.get_all_calculations())
+        self.assertRaises(
+            RuntimeError, lambda: structure.set_all_calculations({"key": [db.ID()]}))
+        self.assertRaises(
+            RuntimeError, lambda: structure.clear_all_calculations())
+
+    def test_is_duplicate_of(self):
+        # Setup
+        model = db.Model("dft", "pbe", "def2-svp")
+        structures = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, structures)
+        assert structure.has_id()
+
+        fake_id = db.ID()
+        fake_id_2 = db.ID()
+
+        self.assertRaises(RuntimeError, lambda: structure.is_duplicate_of())
+        structure.set_as_duplicate_of(fake_id)
+        assert structure.is_duplicate_of() == fake_id
+        structure.set_as_duplicate_of(fake_id_2)
+        assert structure.is_duplicate_of() != fake_id
+        assert structure.is_duplicate_of() == fake_id_2
+        structure.clear_duplicate_ID()
+        self.assertRaises(RuntimeError, lambda: structure.is_duplicate_of())

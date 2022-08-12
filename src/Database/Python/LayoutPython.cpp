@@ -75,7 +75,8 @@ void init_layout(pybind11::module& m) {
     )delim");
   layout.def(
       "elementary_step_type",
-      [](const StructureLabel label) -> std::string { return Layout::EnumMaps::label2str.at(label); }, pybind11::arg("label"),
+      [](const ElementaryStepType type) -> std::string { return Layout::EnumMaps::estype2str.at(type); },
+      pybind11::arg("type"),
       R"delim(
       Returns the database layout of a elementary step type
 

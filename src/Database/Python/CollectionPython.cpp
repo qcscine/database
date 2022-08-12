@@ -88,6 +88,7 @@ void init_collection(CollectionClass& collection) {
   collection.def("has_reaction", &Collection::has<Reaction>, pybind11::arg("id"));
   collection.def("has_elementary_step", &Collection::has<ElementaryStep>, pybind11::arg("id"));
   collection.def("has_compound", &Collection::has<Compound>, pybind11::arg("id"));
+  collection.def("has_flask", &Collection::has<Flask>, pybind11::arg("id"));
 
   collection.def(
       "find",
@@ -114,6 +115,8 @@ void init_collection(CollectionClass& collection) {
                  pybind11::arg("filter"), pybind11::arg("update") = "", pybind11::arg("sort") = "");
   collection.def("get_and_update_one_structure", &Collection::getAndUpdateOne<Structure>, pybind11::arg("filter"),
                  pybind11::arg("update") = "", pybind11::arg("sort") = "");
+  collection.def("get_and_update_one_flask", &Collection::getAndUpdateOne<Flask>, pybind11::arg("filter"),
+                 pybind11::arg("update") = "", pybind11::arg("sort") = "");
 
   collection.def("get_one_calculation", &getOneWrapper<Calculation>, pybind11::arg("filter"), pybind11::arg("sort") = "");
   collection.def("get_one_compound", &getOneWrapper<Compound>, pybind11::arg("filter"), pybind11::arg("sort") = "");
@@ -122,6 +125,7 @@ void init_collection(CollectionClass& collection) {
   collection.def("get_one_elementary_step", &getOneWrapper<ElementaryStep>, pybind11::arg("filter"),
                  pybind11::arg("sort") = "");
   collection.def("get_one_structure", &getOneWrapper<Structure>, pybind11::arg("filter"), pybind11::arg("sort") = "");
+  collection.def("get_one_flask", &getOneWrapper<Flask>, pybind11::arg("filter"), pybind11::arg("sort") = "");
 
   collection.def("get_calculation", &Collection::get<Calculation>, pybind11::arg("calculation"));
   collection.def("get_compound", &Collection::get<Compound>, pybind11::arg("compound"));
@@ -133,6 +137,7 @@ void init_collection(CollectionClass& collection) {
   collection.def("get_reaction", &Collection::get<Reaction>, pybind11::arg("reaction"));
   collection.def("get_elementary_step", &Collection::get<ElementaryStep>, pybind11::arg("reaction_path"));
   collection.def("get_structure", &Collection::get<Structure>, pybind11::arg("structure"));
+  collection.def("get_flasks", &Collection::get<Flask>, pybind11::arg("flask"));
 
   collection.def("query_calculations", &Collection::query<Calculation>, pybind11::arg("selection"));
   collection.def("query_compounds", &Collection::query<Compound>, pybind11::arg("selection"));
@@ -140,6 +145,7 @@ void init_collection(CollectionClass& collection) {
   collection.def("query_reactions", &Collection::query<Reaction>, pybind11::arg("selection"));
   collection.def("query_elementary_steps", &Collection::query<ElementaryStep>, pybind11::arg("selection"));
   collection.def("query_structures", &Collection::query<Structure>, pybind11::arg("selection"));
+  collection.def("query_flasks", &Collection::query<Flask>, pybind11::arg("selection"));
 
   collection.def("random_select_calculations", &Collection::randomSelect<Calculation>, pybind11::arg("n_samples"));
   collection.def("random_select_compounds", &Collection::randomSelect<Compound>, pybind11::arg("n_samples"));
@@ -147,6 +153,7 @@ void init_collection(CollectionClass& collection) {
   collection.def("random_select_reactions", &Collection::randomSelect<Reaction>, pybind11::arg("n_samples"));
   collection.def("random_select_elementary_steps", &Collection::randomSelect<ElementaryStep>, pybind11::arg("n_samples"));
   collection.def("random_select_structures", &Collection::randomSelect<Structure>, pybind11::arg("n_samples"));
+  collection.def("random_select_flasks", &Collection::randomSelect<Flask>, pybind11::arg("n_samples"));
 
   collection.def("count", &Collection::count, pybind11::arg("selection"));
 
@@ -156,6 +163,7 @@ void init_collection(CollectionClass& collection) {
   collection.def("iterate_reactions", &iterateQuery<Reaction>, pybind11::arg("selection"));
   collection.def("iterate_elementary_steps", &iterateQuery<ElementaryStep>, pybind11::arg("selection"));
   collection.def("iterate_structures", &iterateQuery<Structure>, pybind11::arg("selection"));
+  collection.def("iterate_flasks", &iterateQuery<Flask>, pybind11::arg("selection"));
 
   collection.def("iterate_all_calculations", &iterateAll<Calculation>);
   collection.def("iterate_all_compounds", &iterateAll<Compound>);
@@ -163,4 +171,5 @@ void init_collection(CollectionClass& collection) {
   collection.def("iterate_all_reactions", &iterateAll<Reaction>);
   collection.def("iterate_all_elementary_steps", &iterateAll<ElementaryStep>);
   collection.def("iterate_all_structures", &iterateAll<Structure>);
+  collection.def("iterate_all_flasks", &iterateAll<Flask>);
 }
