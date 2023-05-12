@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 import datetime
 import argparse
 
@@ -10,12 +11,14 @@ parser.add_argument('--port', dest='port', type=int, default=27017,
                     help='The database server port. [default = 27017]')
 parser.add_argument('--name', dest='db_name', type=str, default='my_awesome_database',
                     help='The database name. [default = my_awesome_database]')
+parser.add_argument('--duplicates', dest='duplicates', type=bool, default=False,
+                    help='Option to extract duplicates. [default = False]')
 args = parser.parse_args()
 
 ip = args.ip
 port = args.port
 db_name = args.db_name
-
+extract_duplicates = args.duplicates
 
 client = MongoClient(ip, port)
 db = client[db_name]
@@ -36,18 +39,20 @@ if not is_correct_old_version:
     exit(1)
 
 # Update content
+# Add flask collection
 if "flasks" not in db.list_collection_names():
-    _ = db["flasks"]
-
+    flasks = db["flasks"]
+    flasks.create_index("flasks")
+# Add type to reactants of reaction
 for reaction in db["reactions"].find():
     if len(reaction['lhs']) == 0 and len(reaction['rhs']) == 0:
         continue
     elif len(reaction['lhs']) != 0:
-        if type(reaction['lhs'][0]) == type(dict):
+        if isinstance(reaction['lhs'][0], type(dict)):
             if 'type' in reaction['lhs'][0]:
                 continue
     elif len(reaction['rhs']) != 0:
-        if type(reaction['rhs'][0]) == type(dict):
+        if isinstance(reaction['rhs'][0], type(dict)):
             if 'type' in reaction['rhs'][0]:
                 continue
     lids = [lid for lid in reaction['lhs']]
@@ -64,7 +69,19 @@ for reaction in db["reactions"].find():
                                 'rhs': new_rhs
                             }}, upsert=False)
 
-db["structure"].update_many({"comound": {"$exists": True}}, {"$rename": {"compound": "aggregate"}})
+# Add 'duplicate_of' field to structure
+if extract_duplicates:
+    for structure in db['structures'].find({'label': 'duplicate'}):
+        # Check, if comment has correct form
+        if ' '.join(structure['comment'].split()[:-1]) == 'Structure is a duplicate of':
+            # Extract ID of original from comment
+            duplicate_id = structure['comment'].split()[-1][:-1]
+            db.structures.update_one({'_id': structure['_id']},
+                                     {"$set": {"duplicate_of": ObjectId(duplicate_id)}},
+                                     upsert=False
+                                     )
+# Rename compound field to aggregate field
+db["structures"].update_many({"compound": {"$exists": True}}, {"$rename": {"compound": "aggregate"}})
 
 
 # Update version

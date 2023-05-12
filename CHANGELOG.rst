@@ -1,6 +1,24 @@
 Changelog
 =========
 
+Release 1.2.0
+-------------
+
+Changes (backwards compatible):
+ - `getAggregate` per default recursively looks up the original structure
+   in case the method calling Structure instance is a duplicate.
+   This avoids adding duplicates to aggregates.
+ - The methods related to duplicates were renamed, the old method calls
+   are now deprecated.
+
+Important Technical Changes:
+ - Increase pickle support of Python bindings.
+
+Bugfixes:
+ - Corrected the 1.0.0 to 1.1.0 update script.
+ - Corrected case sensitivity in model completion.
+ - Corrected temperature setting completion for `none` case.
+
 Release 1.1.0
 -------------
 

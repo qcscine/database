@@ -255,12 +255,28 @@ void Structure::setMultiplicity(const int multiplicity) const {
  *  Compound
  *============*/
 
-ID Structure::getAggregate() const {
-  return Fields::get<ID>(*this, "aggregate");
+ID Structure::getAggregate(bool recursive) const {
+  if (!recursive) {
+    return Fields::get<ID>(*this, "aggregate");
+  }
+  // check if field has entry
+  bool nonNull = Fields::nonNull(*this, "aggregate");
+  if (nonNull || !hasOriginal()) {
+    return Fields::get<ID>(*this, "aggregate");
+  }
+  auto original = Structure(getOriginal(), _collection);
+  return original.getAggregate();
 }
 
-bool Structure::hasAggregate() const {
-  return Fields::nonNull(*this, "aggregate");
+bool Structure::hasAggregate(bool recursive) const {
+  // check if field has entry
+  bool nonNull = Fields::nonNull(*this, "aggregate");
+  if (!recursive || !hasOriginal()) {
+    return nonNull;
+  }
+  // we now know that we have an original that we can get
+  auto original = Structure(getOriginal(), _collection);
+  return original.hasAggregate();
 }
 
 void Structure::setAggregate(const ID& id) const {
@@ -878,19 +894,51 @@ void Structure::clearComment() const {
   this->setComment("");
 }
 
-ID Structure::isDuplicateOf() const {
-  if (!Fields::nonNull(*this, "duplicate_of")) {
-    throw Exceptions::UnpopulatedObjectException();
+/*==============*
+ *  Duplicates
+ *==============*/
+
+bool Structure::hasOriginal() const {
+  if (!_collection) {
+    throw Exceptions::MissingLinkedCollectionException();
+  }
+  return Fields::nonNull(*this, "duplicate_of");
+}
+
+ID Structure::getOriginal() const {
+  if (!_collection) {
+    throw Exceptions::MissingLinkedCollectionException();
+  }
+  if (!this->hasOriginal()) {
+    throw Exceptions::MissingIdOrField();
   }
   return Fields::get<ID>(*this, "duplicate_of");
 }
 
-void Structure::setAsDuplicateOf(const ID& id) const {
+void Structure::setOriginal(const ID& id) const {
+  if (!_collection) {
+    throw Exceptions::MissingLinkedCollectionException();
+  }
   Fields::set<ID>(*this, "duplicate_of", id);
 }
 
-void Structure::clearDuplicateID() const {
+void Structure::clearOriginal() const {
+  if (!_collection) {
+    throw Exceptions::MissingLinkedCollectionException();
+  }
   Fields::set(*this, "duplicate_of", std::string{});
+}
+
+ID Structure::isDuplicateOf() const {
+  return getOriginal();
+}
+
+void Structure::setAsDuplicateOf(const ID& id) const {
+  setOriginal(id);
+}
+
+void Structure::clearDuplicateID() const {
+  clearOriginal();
 }
 
 } /* namespace Database */

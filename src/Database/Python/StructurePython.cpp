@@ -264,6 +264,7 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // compound
   structure.def("get_compound", &Structure::getCompound);
   structure.def("set_compound", &Structure::setCompound, pybind11::arg("compound"));
   structure.def("has_compound", &Structure::hasCompound);
@@ -271,15 +272,22 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
   def_optional_property<Structure>(structure, "compound_id", std::mem_fn(&Structure::hasCompound),
                                    std::mem_fn(&Structure::getCompound), std::mem_fn(&Structure::setCompound),
                                    std::mem_fn(&Structure::clearCompound), "Linked compound id");
+
+  // duplicate of
+  structure.def("is_duplicate_of", &Structure::isDuplicateOf);
+  structure.def("set_as_duplicate_of", &Structure::setAsDuplicateOf, pybind11::arg("id"));
+  structure.def("clear_duplicate_id", &Structure::clearDuplicateID);
 #pragma GCC diagnostic pop
 
-  structure.def("get_aggregate", &Structure::getAggregate);
+  structure.def("get_aggregate", &Structure::getAggregate, pybind11::arg("recursive") = true);
   structure.def("set_aggregate", &Structure::setAggregate, pybind11::arg("aggregate"));
-  structure.def("has_aggregate", &Structure::hasAggregate);
+  structure.def("has_aggregate", &Structure::hasAggregate, pybind11::arg("recursive") = true);
   structure.def("clear_aggregate", &Structure::clearAggregate);
-  def_optional_property<Structure>(structure, "aggregate_id", std::mem_fn(&Structure::hasAggregate),
-                                   std::mem_fn(&Structure::getAggregate), std::mem_fn(&Structure::setAggregate),
-                                   std::mem_fn(&Structure::clearAggregate), "Linked aggregate id");
+  def_optional_property<Structure>(
+      structure, "aggregate_id", [&](const Structure& structure) { return structure.hasAggregate(); },
+      [&](const Structure& structure) { return structure.getAggregate(); },
+      [&](const Structure& structure, const ID& id) { return structure.setAggregate(id); },
+      [&](const Structure& structure) { return structure.clearAggregate(); }, "Linked aggregate id");
 
   structure.def("has_property", pybind11::overload_cast<const std::string&>(&Structure::hasProperty, pybind11::const_),
                 pybind11::arg("key"));
@@ -335,7 +343,8 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
                                    std::mem_fn(&Structure::getComment), std::mem_fn(&Structure::setComment),
                                    std::mem_fn(&Structure::clearComment), "Free-form comment on the structure");
 
-  structure.def("is_duplicate_of", &Structure::isDuplicateOf);
-  structure.def("set_as_duplicate_of", &Structure::setAsDuplicateOf, pybind11::arg("id"));
-  structure.def("clear_duplicate_ID", &Structure::clearDuplicateID);
+  structure.def("has_original", &Structure::hasOriginal);
+  structure.def("get_original", &Structure::getOriginal);
+  structure.def("set_original", &Structure::setOriginal, pybind11::arg("id"));
+  structure.def("clear_original", &Structure::clearOriginal);
 }

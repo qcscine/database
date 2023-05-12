@@ -188,12 +188,14 @@ class Structure : public Object {
   void setMultiplicity(int multiplicity) const;
   /**
    * @brief Get linked aggregate-id
+   * @param recursive Whether the duplicate_of field can serve as a fallback to find an aggregate recursively
+   * in case the aggregate field is empty
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @throws MissingIdOrField Thrown if the structure does not have a linked aggregate ID.
    * @return ID The ID of the linked aggregate.
    */
-  ID getAggregate() const;
+  ID getAggregate(bool recursive = true) const;
   /**
    * @brief Links the structure to a aggregate.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
@@ -203,12 +205,14 @@ class Structure : public Object {
   void setAggregate(const ID& id) const;
   /**
    * @brief Checks if the structure is linked to a aggregate.
+   * @param recursive Whether the duplicate_of field can serve as a fallback to find an aggregate recursively
+   * in case the aggregate field is empty
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @throws MissingIDException Thrown if the object does not have an ID.
    * @return true  If the structure is linked to a aggregate.
    * @return false If the structure is not linked to a aggregate.
    */
-  bool hasAggregate() const;
+  bool hasAggregate(bool recursive = true) const;
   /**
    * @brief Removes the current link to aggregate.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
@@ -642,26 +646,38 @@ class Structure : public Object {
    */
   void clearComment() const;
   /**
-   * @brief Get the ID of the structure, this structure is a duplicate of.
+   * @brief Checks if the structure has a original assigned (duplicate_of)
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
-   * @throws MissingIDException Thrown if the object does not have an ID.
-   * @throw UnpopulatedObjectException Thrown if the "duplicate_of" field is empty.
-   * @return The ID of the unique structure.
+   * @return true  If duplicate_of field has an entry present in the structure.
+   * @return false f duplicate_of field has no entry present in the structure.
    */
-  ID isDuplicateOf() const;
+  bool hasOriginal() const;
+  /**
+   * @brief Get the ID of the structure this structure is a duplicate of.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDorFileException Thrown if the object has no original assigned.
+   * @return The ID of the unique structure
+   */
+  ID getOriginal() const;
   /**
    * @brief Set the ID in the field "duplicate_of", i.e., the structure ID this structure is a duplicate of.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
-   * @throws MissingIDException Thrown if the object does not have an ID.
    * @param id The ID of the non-duplicate structure.
    */
-  void setAsDuplicateOf(const ID& id) const;
+  void setOriginal(const ID& id) const;
   /**
    * @brief Clear the "duplicate_of" field.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
-   * @throws MissingIDException Thrown if the object does not have an ID.
    */
-  void clearDuplicateID() const;
+  void clearOriginal() const;
+  [[deprecated("'duplicate_of' field has been refined with proper has/get/set/clearOriginal methods since v1.2.0")]] ID
+  isDuplicateOf() const;
+  [[deprecated("'duplicate_of' field has been refined with proper has/get/set/clearOriginal methods since "
+               "v1.2.0")]] void
+  setAsDuplicateOf(const ID& id) const;
+  [[deprecated("'duplicate_of' field has been refined with proper has/get/set/clearOriginal methods since "
+               "v1.2.0")]] void
+  clearDuplicateID() const;
 };
 
 } /* namespace Database */

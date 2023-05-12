@@ -4,6 +4,7 @@ Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
 See LICENSE.txt for details.
 """
 
+from copy import copy
 import scine_utilities as utils
 import scine_database as db
 import unittest
@@ -138,7 +139,10 @@ class CalculationTest(unittest.TestCase):
         assert job.memory == 1.0
         assert job.cores == 1
         assert job.disk == 1
+        job2 = copy(job)
+        assert job2 == job
         job.order = "asdf"
+        assert job2 != job
         job.memory = 123.456
         job.cores = 15
         job.disk = 654.123

@@ -778,7 +778,7 @@ class StructureTest(unittest.TestCase):
         self.assertRaises(
             RuntimeError, lambda: structure.clear_all_calculations())
 
-    def test_is_duplicate_of(self):
+    def test_get_original(self):
         # Setup
         model = db.Model("dft", "pbe", "def2-svp")
         structures = self.manager.get_collection("structures")
@@ -789,11 +789,35 @@ class StructureTest(unittest.TestCase):
         fake_id = db.ID()
         fake_id_2 = db.ID()
 
-        self.assertRaises(RuntimeError, lambda: structure.is_duplicate_of())
-        structure.set_as_duplicate_of(fake_id)
-        assert structure.is_duplicate_of() == fake_id
-        structure.set_as_duplicate_of(fake_id_2)
-        assert structure.is_duplicate_of() != fake_id
-        assert structure.is_duplicate_of() == fake_id_2
-        structure.clear_duplicate_ID()
-        self.assertRaises(RuntimeError, lambda: structure.is_duplicate_of())
+        self.assertRaises(RuntimeError, lambda: structure.get_original())
+        structure.set_original(fake_id)
+        assert structure.get_original() == fake_id
+        structure.set_original(fake_id_2)
+        assert structure.get_original() != fake_id
+        assert structure.get_original() == fake_id_2
+        structure.clear_original()
+        self.assertRaises(RuntimeError, lambda: structure.get_original())
+
+    def test_aggregate_access_via_duplicate(self):
+        model = db.Model("dft", "pbe", "def2-svp")
+        structures = self.manager.get_collection("structures")
+        structure = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.MINIMUM_GUESS, structures)
+        assert structure.has_id()
+
+        duplicate = db.Structure.make(
+            self.atoms, 0, 1, model, db.Label.DUPLICATE, structures)
+        assert duplicate.has_id()
+
+        duplicate.set_original(structure.id())
+        assert duplicate.get_original() == structure.id()
+
+        self.assertRaises(RuntimeError, lambda: structure.get_aggregate())
+        self.assertRaises(RuntimeError, lambda: duplicate.get_aggregate())
+
+        fake_id = db.ID()
+        structure.set_aggregate(fake_id)
+        assert structure.get_aggregate() == fake_id
+        assert duplicate.get_aggregate() == fake_id
+        self.assertRaises(RuntimeError, lambda: duplicate.get_aggregate(recursive=False))
+

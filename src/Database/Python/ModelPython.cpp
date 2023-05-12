@@ -112,4 +112,30 @@ void init_model(pybind11::module& m) {
   // Comparison operators
   model.def(pybind11::self == pybind11::self);
   model.def(pybind11::self != pybind11::self);
+  model.def(pybind11::pickle(
+      [](const Model& m) { // __getstate__
+        /* Return a tuple that fully encodes the state of the object */
+        return pybind11::make_tuple(m.methodFamily, m.method, m.basisSet, m.spinMode, m.program, m.version, m.solvation,
+                                    m.solvent, m.embedding, m.periodicBoundaries, m.externalField, m.temperature,
+                                    m.electronicTemperature);
+      },
+      [](pybind11::tuple t) { // __setstate__
+        if (t.size() != 13)
+          throw std::runtime_error("Invalid state for Model!");
+
+        /* Create a new C++ instance */
+        Model m(t[0].cast<std::string>(), t[1].cast<std::string>(), t[2].cast<std::string>());
+        m.spinMode = t[3].cast<std::string>();
+        m.program = t[4].cast<std::string>();
+        m.version = t[5].cast<std::string>();
+        m.solvation = t[6].cast<std::string>();
+        m.solvent = t[7].cast<std::string>();
+        m.embedding = t[8].cast<std::string>();
+        m.periodicBoundaries = t[9].cast<std::string>();
+        m.externalField = t[10].cast<std::string>();
+        m.temperature = t[11].cast<std::string>();
+        m.electronicTemperature = t[12].cast<std::string>();
+
+        return m;
+      }));
 }

@@ -48,7 +48,8 @@ The SCINE database module can be built using a standard CMake/make setup::
 
 Note that the tests, by default, require a MongoDB to be running on the local host.
 Alternatively the ``-DTEST_MONGO_DB_IP=XXX`` flag can be set in the CMake configure
-step to route the test executable to another database.
+step to route the test executable to another database. For MongoDB, use at least
+version 4.2.0.
 
 For minimal usage examples please see the user manual provided in this repository
 or check the latest online version on the `SCINE web page <https://scine.ethz.ch>`_.
@@ -63,7 +64,7 @@ please use the DOI of the respective release).
 In addition, we kindly request you to cite the following article when using the SCINE database wrapper:
 J. P. Unsleber, S. A. Grimmel, M. Reiher,
 "Chemoton 2.0: Autonomous Exploration of Chemical Reaction Networks",
-arXiv:2202.13011 [physics.chem-ph].
+*J. Chem. Theory Comput.*, **2022**, *18*, 5393.
 
 Support and Contact
 -------------------

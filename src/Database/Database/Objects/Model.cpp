@@ -9,6 +9,7 @@
 #include "Database/Objects/Model.h"
 /* External Includes */
 #include <Utils/Settings.h>
+#include <Utils/Strings.h>
 #include <math.h>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <string>
@@ -86,9 +87,13 @@ void Model::completeSettings(Utils::Settings& settings) {
   for (const auto& tempSettingName : temperatureSettings) {
     const bool exists = settings.valueExists(tempSettingName);
     auto modelEntryRef = settingsModelPairs.at(tempSettingName);
-    if (!exists && !entryIsNone(modelEntryRef.get())) {
-      throw std::runtime_error("Setting '" + tempSettingName + "' does not exist in settings, but has the value '" +
-                               modelEntryRef.get() + "' in the model.");
+    if (!exists) {
+      if (!entryIsNone(modelEntryRef.get())) {
+        throw std::runtime_error("Setting '" + tempSettingName + "' does not exist in settings, but has the value '" +
+                                 modelEntryRef.get() + "' in the model.");
+      }
+      // setting does not exists and model entry is none --> no need for manipulation
+      continue;
     }
     // we do not allow 'none' for temperatures if the setting exists
     if (exists && entryIsNone(modelEntryRef.get())) {
@@ -120,7 +125,7 @@ void Model::completeModel(const Utils::Settings& settings) {
     }
     const bool exists = settings.valueExists(settingName);
     if (exists && !entryIsAny(modelEntryRef.get())) {
-      if (settings.getString(settingName) != modelEntryRef.get()) {
+      if (!Utils::caseInsensitiveEqual(settings.getString(settingName), modelEntryRef.get())) {
         // setting and model mismatch literally, make sure they are not different versions of 'none'
         if (entryIsNone(settings.getString(settingName)) && entryIsNone(modelEntryRef.get())) {
           continue;

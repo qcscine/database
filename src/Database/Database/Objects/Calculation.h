@@ -12,6 +12,7 @@
 #include "Database/Objects/Object.h"
 /* External Includes */
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <vector>
 
@@ -97,6 +98,13 @@ class Calculation : public Object {
     int cores = 1;
     /// @brief Minimum disk space in GB.
     double disk = 1.0;
+    bool operator==(const Job& rhs) const {
+      return this->order == rhs.order && this->cores == rhs.cores && std::fabs(this->memory - rhs.memory) < 1e-12 &&
+             std::fabs(this->disk - rhs.disk) < 1e-12;
+    }
+    bool operator!=(const Job& rhs) const {
+      return !(*this == rhs);
+    }
   };
   /**
    * @brief Get the Job object.

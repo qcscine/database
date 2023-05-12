@@ -10,7 +10,7 @@ from dev.conan.base import ScineConan
 
 class ScineDatabaseConan(ScineConan):
     name = "scine_database"
-    version = "1.1.0"
+    version = "1.2.0"
     url = "https://github.com/qcscine/database"
     description = """
 The SCINE Database is a database wrapper for a MongoDB encoding reaction
@@ -48,7 +48,7 @@ networks."""
     requires = [
         "mongo-cxx-driver/3.6.0",
         "eigen/[~=3.3.7]",
-        "scine_utilities/6.0.0"
+        "scine_utilities/8.0.0"
     ]
     cmake_name = "Database"
     cmake_definitions = {

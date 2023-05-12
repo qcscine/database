@@ -127,6 +127,30 @@ void init_calculation(pybind11::module& m) {
   job.def_readwrite("memory", &Calculation::Job::memory, "Minimum required memory in GB");
   job.def_readwrite("cores", &Calculation::Job::cores, "Minimum required number of cores");
   job.def_readwrite("disk", &Calculation::Job::disk, "Minimum required disk space in GB");
+  job.def(pybind11::pickle(
+      [](const Calculation::Job& j) { // __getstate__
+        /* Return a tuple that fully encodes the state of the object */
+        return pybind11::make_tuple(j.order, j.memory, j.cores, j.disk);
+      },
+      [](pybind11::tuple t) { // __setstate__
+        if (t.size() != 4)
+          throw std::runtime_error("Invalid state for Job!");
+
+        /* Create a new C++ instance */
+        Calculation::Job j(t[0].cast<std::string>());
+
+        j.memory = t[1].cast<double>();
+        j.cores = t[2].cast<int>();
+        j.disk = t[3].cast<double>();
+
+        return j;
+      }));
+  job.def(pybind11::self == pybind11::self);
+  job.def(pybind11::self != pybind11::self);
+  job.def("__copy__", [](const Calculation::Job& self) -> Calculation::Job { return Calculation::Job(self); });
+  job.def("__deepcopy__", [](const Calculation::Job& self, pybind11::dict /* memo */) -> Calculation::Job {
+    return Calculation::Job(self);
+  });
 
   pybind11::enum_<Calculation::STATUS> status(m, "Status");
   status.value("CONSTRUCTION", Calculation::STATUS::CONSTRUCTION,

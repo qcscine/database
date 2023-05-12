@@ -854,7 +854,9 @@ TEST_F(StructureTest, CalculationFails2) {
   ASSERT_THROW(structure.clearAllCalculations(), Exceptions::MissingIDException);
 }
 
-TEST_F(StructureTest, IsDuplicateOf) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(StructureTest, AccessOriginal) {
   Utils::AtomCollection atoms;
   atoms.resize(2);
   atoms.setElement(0, Utils::ElementType::H);
@@ -869,24 +871,61 @@ TEST_F(StructureTest, IsDuplicateOf) {
   ID id;
   ID id2;
 
-  ASSERT_THROW(structure.isDuplicateOf(), Exceptions::UnpopulatedObjectException);
-  structure.setAsDuplicateOf(id);
-  ASSERT_TRUE(structure.isDuplicateOf() == id);
-  structure.setAsDuplicateOf(id2);
-  ASSERT_TRUE(structure.isDuplicateOf() == id2);
-  structure.clearDuplicateID();
-  ASSERT_THROW(structure.isDuplicateOf(), Exceptions::UnpopulatedObjectException);
-}
+  ASSERT_FALSE(structure.hasOriginal());
+  structure.setOriginal(id);
+  ASSERT_TRUE(structure.hasOriginal());
 
-TEST_F(StructureTest, IsDuplicateOfFailuresID) {
+  ASSERT_TRUE(structure.getOriginal() == id);
+  ASSERT_TRUE(structure.isDuplicateOf() == id); // deprecated method
+  structure.setOriginal(id2);
+  ASSERT_TRUE(structure.getOriginal() == id2);
+  structure.clearOriginal();
+  ASSERT_FALSE(structure.hasOriginal());
+  // deprecated methods
+  structure.setAsDuplicateOf(id);
+  ASSERT_TRUE(structure.getOriginal() == id);
+  structure.clearDuplicateID();
+  ASSERT_FALSE(structure.hasOriginal());
+}
+#pragma GCC diagnostic pop
+
+TEST_F(StructureTest, AccessOriginalFailures) {
   auto coll = db.getCollection("structures");
   Structure structure;
   structure.link(coll);
   ID id;
 
-  ASSERT_THROW(structure.isDuplicateOf(), Exceptions::MissingIDException);
-  ASSERT_THROW(structure.clearDuplicateID(), Exceptions::MissingIDException);
-  ASSERT_THROW(structure.setAsDuplicateOf(id), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.getOriginal(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.clearOriginal(), Exceptions::MissingIDException);
+  ASSERT_THROW(structure.setOriginal(id), Exceptions::MissingIDException);
+}
+
+TEST_F(StructureTest, AggregateAccessViaDuplicate) {
+  Utils::AtomCollection atoms;
+  atoms.resize(2);
+  atoms.setElement(0, Utils::ElementType::H);
+  atoms.setElement(1, Utils::ElementType::H);
+  atoms.setPosition(0, Eigen::Vector3d(+1, 0, 0));
+  atoms.setPosition(1, Eigen::Vector3d(-1, 0, 0));
+  Model model("dft", "pbe", "def2-svp");
+  auto structures = db.getCollection("structures");
+  Structure structure = Structure::create(atoms, 0, 1, model, Structure::LABEL::MINIMUM_GUESS, structures);
+  Structure duplicate = Structure::create(atoms, 0, 1, model, Structure::LABEL::DUPLICATE, structures);
+
+  ASSERT_THROW(structure.getOriginal(), Exceptions::MissingIdOrField);
+  ASSERT_THROW(duplicate.getOriginal(), Exceptions::MissingIdOrField);
+
+  duplicate.setOriginal(structure.id());
+  ASSERT_TRUE(duplicate.getOriginal() == structure.id());
+
+  ASSERT_THROW(structure.getAggregate(), Exceptions::MissingIdOrField);
+  ASSERT_THROW(duplicate.getAggregate(), Exceptions::MissingIdOrField);
+
+  ID fakeId;
+  structure.setAggregate(fakeId);
+  ASSERT_TRUE(structure.getAggregate() == fakeId);
+  ASSERT_TRUE(duplicate.getAggregate() == fakeId);
+  ASSERT_THROW(duplicate.getAggregate(false), Exceptions::MissingIdOrField);
 }
 
 } /* namespace Tests */

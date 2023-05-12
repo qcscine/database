@@ -8,11 +8,10 @@
 #include "Database/Objects/ValueCollection.h"
 #include "Database/Exceptions.h"
 #include "Utils/UniversalSettings/GenericValueVariant.h"
-#include <boost/fusion/adapted/std_tuple.hpp>
-#include <boost/fusion/algorithm/iteration.hpp>
 #include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/types/value.hpp>
 #include <map>
+#include <tuple>
 
 namespace Scine {
 namespace Database {
@@ -117,19 +116,16 @@ void anon_serialize(bsoncxx::builder::basic::document& document, const std::stri
 
 void GenericValue::serialize(bsoncxx::builder::basic::document& document, const std::string& key,
                              const Utils::UniversalSettings::GenericValue& value) {
-  // clang-format off
-  boost::fusion::for_each(
-    Utils::UniversalSettings::GenericValueMeta::zip(
-      Utils::UniversalSettings::GenericValueMeta::type_checkers(),
-      Utils::UniversalSettings::GenericValueMeta::getters()
-    ),
-    [&](auto fns) {
-      if (std::get<0>(fns)(value)) {
-        anon_serialize(document, key, std::get<1>(fns)(value));
-      }
+  bool foundType = false;
+  auto checkType = [&](auto&& fns) {
+    if (!foundType && std::get<0>(fns)(value)) {
+      anon_serialize(document, key, std::get<1>(fns)(value));
+      foundType = true;
     }
-  );
-  // clang-format on
+  };
+  std::apply([&](auto&&... fns) { ((checkType(fns)), ...); },
+             Utils::UniversalSettings::GenericValueMeta::zip(Utils::UniversalSettings::GenericValueMeta::type_checkers(),
+                                                             Utils::UniversalSettings::GenericValueMeta::getters()));
 }
 
 Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValueType& value) {

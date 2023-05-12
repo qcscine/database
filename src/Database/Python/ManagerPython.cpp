@@ -16,8 +16,9 @@ using namespace Scine::Database;
 void init_credentials(pybind11::module& m) {
   pybind11::class_<Credentials> credentials(m, "Credentials");
   credentials.def(pybind11::init<>());
-  credentials.def(pybind11::init<std::string, int, std::string>(), pybind11::arg("ip"), pybind11::arg("port"),
-                  pybind11::arg("database"));
+  credentials.def(pybind11::init<std::string, int, std::string, std::string, std::string, std::string>(),
+                  pybind11::arg("ip"), pybind11::arg("port"), pybind11::arg("database"), pybind11::arg("username") = "",
+                  pybind11::arg("password") = "", pybind11::arg("auth_database") = "");
   credentials.def_readwrite("hostname", &Credentials::hostname);
   credentials.def_readwrite("port", &Credentials::port);
   credentials.def_readwrite("databaseName", &Credentials::databaseName);
@@ -28,6 +29,20 @@ void init_credentials(pybind11::module& m) {
   credentials.def_readwrite("authDatabase", &Credentials::authDatabase);
   credentials.def(pybind11::self == pybind11::self);
   credentials.def(pybind11::self != pybind11::self);
+  credentials.def(pybind11::pickle(
+      [](const Credentials& c) { // __getstate__
+        /* Return a tuple that fully encodes the state of the object */
+        return pybind11::make_tuple(c.hostname, c.port, c.databaseName, c.username, c.password, c.authDatabase);
+      },
+      [](pybind11::tuple t) { // __setstate__
+        if (t.size() != 6)
+          throw std::runtime_error("Invalid state for Credentials!");
+
+        /* Create a new C++ instance */
+        Credentials c(t[0].cast<std::string>(), t[1].cast<int>(), t[2].cast<std::string>(), t[3].cast<std::string>(),
+                      t[4].cast<std::string>(), t[5].cast<std::string>());
+        return c;
+      }));
 }
 
 void init_manager(pybind11::class_<Manager>& manager) {
