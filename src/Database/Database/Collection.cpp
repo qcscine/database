@@ -1,7 +1,7 @@
 /**
  * @file Collection.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -60,7 +60,11 @@ ObjectClass Collection::get(ID id) {
   // sanity check
   static_assert(std::is_base_of<Object, ObjectClass>::value, "Requested class is not a SCINE database object.");
   auto selection = document{} << "_id" << id.bsoncxx() << finalize;
-  auto optional = this->_collection->find_one(selection.view());
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  options.projection(projection.view());
+  auto optional = this->_collection->find_one(selection.view(), options);
   if (!optional) {
     throw Exceptions::IDNotFoundException();
   }
@@ -101,8 +105,9 @@ ObjectClass Collection::getOne(const std::string& filter, const std::string& sor
   // sanity check
   static_assert(std::is_base_of<Object, ObjectClass>::value, "Requested class is not a SCINE database object.");
   auto selectionDoc = bsoncxx::from_json(filter);
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
   auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
-  auto options = mongocxx::options::find();
   options.projection(projection.view());
   const std::string sortDocInput = (sort.empty()) ? "{}" : sort;
   auto sortDoc = bsoncxx::from_json(sortDocInput);
@@ -126,14 +131,22 @@ ObjectClass Collection::getOne(const std::string& filter, const std::string& sor
 
 bool Collection::has(const ID& id) {
   auto selection = document{} << "_id" << id.bsoncxx() << finalize;
-  auto optional = this->_collection->find_one(selection.view());
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  options.projection(projection.view());
+  auto optional = this->_collection->find_one(selection.view(), options);
   return static_cast<bool>(optional);
 }
 
 template<class ObjectClass>
 bool Collection::has(const ID& id) {
   auto selection = document{} << "_id" << id.bsoncxx() << finalize;
-  auto optional = this->_collection->find_one(selection.view());
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  options.projection(projection.view());
+  auto optional = this->_collection->find_one(selection.view(), options);
   if (!optional) {
     return false;
   }
@@ -146,7 +159,11 @@ bool Collection::has(const ID& id) {
 }
 
 boost::optional<ID> Collection::find(const std::string& query) {
-  auto optional = this->_collection->find_one(bsoncxx::from_json(query));
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  options.projection(projection.view());
+  auto optional = this->_collection->find_one(bsoncxx::from_json(query), options);
   if (!optional) {
     return boost::none;
   }
@@ -159,9 +176,11 @@ boost::optional<ID> Collection::find(const std::string& query) {
 template<class ObjectClass>
 std::vector<ObjectClass> Collection::query(const std::string& selection) {
   static_assert(std::is_base_of<Object, ObjectClass>::value, "Requested class is not a SCINE database object.");
-  mongocxx::options::find opts;
-  opts.no_cursor_timeout(true);
-  mongocxx::cursor cursor = this->_collection->find(bsoncxx::from_json(selection), opts);
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  options.projection(projection.view());
+  mongocxx::cursor cursor = this->_collection->find(bsoncxx::from_json(selection), options);
   return toVector<ObjectClass>(cursor);
 }
 
@@ -211,17 +230,19 @@ struct Collection::CollectionLooper<Obj>::Impl {
 
 template<class Obj>
 Collection::CollectionLooper<Obj>::CollectionLooper(Collection& coll, bsoncxx::document::view_or_value query) {
-  mongocxx::options::find opts;
-  opts.no_cursor_timeout(true);
-  _pImpl = std::make_unique<Impl>(coll, query, opts);
+  mongocxx::options::find options;
+  options.no_cursor_timeout(true);
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  options.projection(projection.view());
+  _pImpl = std::make_unique<Impl>(coll, query, options);
 }
 
 template<class Obj>
-Collection::CollectionLooper<Obj>::~CollectionLooper() = default;
+Collection::CollectionLooper<Obj>::CollectionLooper::~CollectionLooper() = default;
 
 template<class Obj>
-Collection::CollectionLooper<Obj>::CollectionLooper(const CollectionLooper<Obj>& other) {
-  _pImpl = std::make_unique<Impl>(*other._pImpl);
+Collection::CollectionLooper<Obj>::CollectionLooper(const CollectionLooper<Obj>& other)
+  : _pImpl(std::make_unique<Impl>(*other._pImpl)) {
 }
 
 template<class Obj>

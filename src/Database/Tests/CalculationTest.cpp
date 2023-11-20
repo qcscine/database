@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #include <Database/Collection.h>
@@ -55,6 +55,7 @@ TEST_F(CalculationTest, Creation) {
   // Check Fields
   auto status = calc.getStatus();
   auto auxiliaries = calc.getAuxiliaries();
+  auto restartInfo = calc.getRestartInformation();
   auto structures = calc.getStructures();
   auto settings = calc.getSettings();
   auto model = calc.getModel();
@@ -65,6 +66,7 @@ TEST_F(CalculationTest, Creation) {
 
   ASSERT_EQ(status, Calculation::STATUS::CONSTRUCTION);
   ASSERT_EQ(auxiliaries.size(), 0);
+  ASSERT_EQ(restartInfo.size(), 0);
   ASSERT_EQ(structures.size(), 3);
   ASSERT_EQ(settings.size(), 0);
   ASSERT_EQ(results.structures.size(), 0);
@@ -547,6 +549,62 @@ TEST_F(CalculationTest, AuxiliariesFailID) {
   ASSERT_THROW(calc.setAuxiliary("foo", id), Exceptions::MissingIDException);
   ASSERT_THROW(calc.setAuxiliaries(std::map<std::string, ID>{}), Exceptions::MissingIDException);
   ASSERT_THROW(calc.clearAuxiliaries(), Exceptions::MissingIDException);
+}
+
+TEST_F(CalculationTest, RestartInformation) {
+  // Setup
+  ID s1, s2, s3;
+  auto coll = db.getCollection("calculations");
+  Calculation::Job job("GeoOpt");
+  Model model("dft", "pbe", "def2-svp");
+  Calculation calc = Calculation::create(model, job, {s1, s2, s3}, coll);
+  ASSERT_TRUE(calc.hasId());
+
+  // RestartInformation Functionalities
+  ID id1, id2, id3, id4, id5;
+  calc.setRestartInformation("foo", id1);
+  calc.setRestartInformation("bar", id2);
+  calc.setRestartInformation("foobar", id3);
+  calc.setRestartInformation("foobar", id2);
+  ASSERT_TRUE(calc.hasRestartInformation("foo"));
+  std::map<std::string, ID> info = {{"foo", id3}, {"bar", id4}, {"barfoo", id5}};
+  calc.removeRestartInformation("foo");
+  ASSERT_FALSE(calc.hasRestartInformation("foo"));
+  calc.setRestartInformation(info);
+  ASSERT_TRUE(calc.hasRestartInformation("foo"));
+  ASSERT_EQ(calc.getRestartInformation("foo"), id3);
+  ASSERT_FALSE(calc.hasRestartInformation("foobar"));
+  calc.clearRestartInformation();
+  ASSERT_FALSE(calc.hasRestartInformation("foo"));
+  ASSERT_FALSE(calc.hasRestartInformation("bar"));
+  ASSERT_FALSE(calc.hasRestartInformation("foobar"));
+  ASSERT_FALSE(calc.hasRestartInformation("barfoo"));
+}
+
+TEST_F(CalculationTest, RestartInformationFailCollection) {
+  Calculation calc;
+  ID id;
+  ASSERT_THROW(calc.getRestartInformation(), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(calc.getRestartInformation("foo"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(calc.hasRestartInformation("foo"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(calc.removeRestartInformation("foo"), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(calc.setRestartInformation("foo", id), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(calc.setRestartInformation(std::map<std::string, ID>{}), Exceptions::MissingLinkedCollectionException);
+  ASSERT_THROW(calc.clearRestartInformation(), Exceptions::MissingLinkedCollectionException);
+}
+
+TEST_F(CalculationTest, RestartInformationFailID) {
+  auto coll = db.getCollection("calculations");
+  Calculation calc;
+  calc.link(coll);
+  ID id;
+  ASSERT_THROW(calc.getRestartInformation(), Exceptions::MissingIDException);
+  ASSERT_THROW(calc.getRestartInformation("foo"), Exceptions::MissingIDException);
+  ASSERT_THROW(calc.hasRestartInformation("foo"), Exceptions::MissingIDException);
+  ASSERT_THROW(calc.removeRestartInformation("foo"), Exceptions::MissingIDException);
+  ASSERT_THROW(calc.setRestartInformation("foo", id), Exceptions::MissingIDException);
+  ASSERT_THROW(calc.setRestartInformation(std::map<std::string, ID>{}), Exceptions::MissingIDException);
+  ASSERT_THROW(calc.clearRestartInformation(), Exceptions::MissingIDException);
 }
 
 TEST_F(CalculationTest, Output) {

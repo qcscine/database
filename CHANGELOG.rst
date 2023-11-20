@@ -1,6 +1,22 @@
 Changelog
 =========
 
+Release 1.3.0
+-------------
+
+Changes (DB schema changing):
+ - Add `restart_information` field to `Calculation`
+ - Add `pressure` to `Model`
+ - Add `MODEL_TRANSFORMATION` elementary step type
+ - Change DB version to 1.2.0 and provide update script
+ - Add additional structure labels for intermediate structures of calculations
+
+Additions (backwards compatible):
+ - Python package now includes pure Python code for more complex query utilities. This code is added in the modules
+ `queries`, `energy_query_functions`, `compound_and_flask_creation`, `concentration_query_functions`, and `insert_concentration`.
+ All of them are top level modules (`import scine_database.energy_query_functions`)
+ - Added the possibility to configure the connection based on a custom URI instead of credentials.
+
 Release 1.2.0
 -------------
 

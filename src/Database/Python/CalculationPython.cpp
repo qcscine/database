@@ -1,7 +1,7 @@
 /**
  * @file CalculationPython.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -295,6 +295,21 @@ void init_calculation(pybind11::module& m) {
   calculation.def("set_auxiliaries", &Calculation::setAuxiliaries, pybind11::arg("auxiliaries"));
   calculation.def("get_auxiliaries", &Calculation::getAuxiliaries);
   calculation.def("clear_auxiliaries", &Calculation::clearAuxiliaries);
+
+  calculation.def("has_restart_information", &Calculation::hasRestartInformation, pybind11::arg("key"));
+  calculation.def("get_restart_information",
+                  pybind11::overload_cast<const std::string&>(&Calculation::getRestartInformation, pybind11::const_),
+                  pybind11::arg("key"), "Get a single ID of the restart information");
+  calculation.def("set_restart_information",
+                  pybind11::overload_cast<const std::string&, const ID&>(&Calculation::setRestartInformation, pybind11::const_),
+                  pybind11::arg("key"), pybind11::arg("id"), "Add a single entry to the restart information");
+  calculation.def("get_restart_information", pybind11::overload_cast<>(&Calculation::getRestartInformation, pybind11::const_),
+                  "Get the whole restart information");
+  calculation.def("set_restart_information",
+                  pybind11::overload_cast<const std::map<std::string, ID>&>(&Calculation::setRestartInformation, pybind11::const_),
+                  pybind11::arg("restart_information"), "Set the whole restart information");
+  calculation.def("remove_restart_information", &Calculation::removeRestartInformation, pybind11::arg("key"));
+  calculation.def("clear_restart_information", &Calculation::clearRestartInformation);
 
   calculation.def("get_raw_output", &Calculation::getRawOutput);
   calculation.def("set_raw_output", &Calculation::setRawOutput, pybind11::arg("raw_output"));

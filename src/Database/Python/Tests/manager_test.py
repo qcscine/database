@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
-import scine_utilities as utils
 import scine_database as db
 import unittest
 import os
@@ -31,7 +30,7 @@ class ManagerTest(unittest.TestCase):
 
     def test_credentials_getter_working(self):
         manager2 = db.Manager()
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         credentials = db.Credentials(
             "THERE_AINT_NO_HOST_HERE", test_port, "unittest_db_AaBbCc")
         manager2.set_credentials(credentials)
@@ -44,7 +43,7 @@ class ManagerTest(unittest.TestCase):
         assert credentials.auth_database == copy.auth_database
 
     def test_credentials_comparison(self):
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         credentials = db.Credentials(
             "THERE_AINT_NO_HOST_HERE", test_port, "unittest_db_AaBbCc")
         credentials1 = db.Credentials(
@@ -58,7 +57,7 @@ class ManagerTest(unittest.TestCase):
     def test_db_name(self):
         manager = db.Manager()
         test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
@@ -90,7 +89,7 @@ class ManagerTest(unittest.TestCase):
     def test_connection_credentials_init_and_wipe(self):
         manager = db.Manager()
         test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
@@ -124,10 +123,50 @@ class ManagerTest(unittest.TestCase):
         manager.disconnect()
         assert not manager.is_connected()
 
+    def test_connection_uri_init_and_wipe(self):
+        manager = db.Manager()
+        assert 'localhost:27017' in manager.get_uri()
+        test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
+        uri = f'mongodb://{test_ip}:{test_port}/'
+        manager.set_uri(uri)
+        manager.connect()
+        manager.init()
+        assert manager.is_connected()
+        # Check collections
+        assert manager.has_collection("structures")
+        assert manager.has_collection("calculations")
+        assert manager.has_collection("properties")
+        assert manager.has_collection("compounds")
+        assert manager.has_collection("reactions")
+        assert manager.has_collection("elementary_steps")
+        # Wipe and check again
+        manager.wipe()
+        assert not manager.has_collection("structures")
+        assert not manager.has_collection("calculations")
+        assert not manager.has_collection("properties")
+        assert not manager.has_collection("compounds")
+        assert not manager.has_collection("reactions")
+        assert not manager.has_collection("elementary_steps")
+        # Init and check again
+        manager.init()
+        assert manager.has_collection("structures")
+        assert manager.has_collection("calculations")
+        assert manager.has_collection("properties")
+        assert manager.has_collection("compounds")
+        assert manager.has_collection("reactions")
+        assert manager.has_collection("elementary_steps")
+        # Clean
+        manager.wipe()
+        manager.disconnect()
+        assert not manager.is_connected()
+        manager.clear_uri()
+        assert 'localhost:27017' in manager.get_uri()
+
     def test_remote_wipe(self):
         manager = db.Manager()
         test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
@@ -155,7 +194,7 @@ class ManagerTest(unittest.TestCase):
         manager = db.Manager()
         self.assertRaises(RuntimeError, lambda: manager.server_time())
         test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()
@@ -164,7 +203,7 @@ class ManagerTest(unittest.TestCase):
     def test_reconnect(self):
         manager = db.Manager()
         test_ip = os.environ.get('TEST_MONGO_DB_IP', '127.0.0.1')
-        test_port = os.environ.get('TEST_MONGO_DB_PORT', 27017)
+        test_port = int(os.environ.get('TEST_MONGO_DB_PORT', 27017))
         test_db = db.Credentials(test_ip, int(test_port), "unittest_db_AaBbCc")
         manager.set_credentials(test_db)
         manager.connect()

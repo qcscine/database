@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -131,6 +131,9 @@ void init_elementary_step(pybind11::module& m) {
   pybind11::enum_<ElementaryStepType> estype(m, "ElementaryStepType");
   estype.value("REGULAR", ElementaryStepType::REGULAR, "A regular elementary step that involves exactly one transition state.");
   estype.value("BARRIERLESS", ElementaryStepType::BARRIERLESS, "An elementary step that has no barrier/ transition state");
+  estype.value("MODEL_TRANSFORMATION", ElementaryStepType::MODEL_TRANSFORMATION,
+               "An elementary step that describes the transformation between"
+               "electronic structure models.");
   elementaryStep.def("get_type", &ElementaryStep::getType);
   elementaryStep.def("set_type", &ElementaryStep::setType);
   elementaryStep.def("get_barrier_from_spline", &ElementaryStep::getBarrierFromSpline, R"delim(

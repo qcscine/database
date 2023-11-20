@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #ifndef INCLUDE_SCINE_DATABASE_LAYOUT_H
@@ -42,11 +42,22 @@ enum class StructureLabel : unsigned {
   SURFACE_ADSORPTION_GUESS = 14,
   COMPLEX_GUESS = 15,
   COMPLEX_OPTIMIZED = 16,
+  SURFACE_COMPLEX_OPTIMIZED = 17,
+  USER_SURFACE_OPTIMIZED = 18,
+  USER_COMPLEX_OPTIMIZED = 19,
+  USER_SURFACE_COMPLEX_OPTIMIZED = 20,
   IRRELEVANT = 99,
-  DUPLICATE = 100
+  DUPLICATE = 100,
+  GEOMETRY_OPTIMIZATION_OBSERVER = 101,
+  TS_OPTIMIZATION_OBSERVER = 102,
+  IRC_FORWARD_OBSERVER = 103,
+  IRC_BACKWARD_OBSERVER = 104,
+  IRC_OPT_FORWARD_OBSERVER = 105,
+  IRC_OPT_BACKWARD_OBSERVER = 106,
+  SCAN_OBSERVER = 107,
 };
 
-enum class ElementaryStepType : unsigned { REGULAR = 0, BARRIERLESS = 1 };
+enum class ElementaryStepType : unsigned { REGULAR = 0, BARRIERLESS = 1, MODEL_TRANSFORMATION = 2 };
 
 namespace Layout {
 

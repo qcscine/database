@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #include <Database/Collection.h>
@@ -131,6 +131,46 @@ TEST_F(ManagerTest, ConnectionCredentialsInitAndWipe) {
   manager.wipe();
   manager.disconnect();
   ASSERT_FALSE(manager.isConnected());
+}
+
+TEST_F(ManagerTest, ConnectionUriInitAndWipe) {
+  Manager manager;
+  std::string uri = std::string("mongodb://") + TEST_MONGO_DB_IP + ":" + std::to_string(std::atoi(TEST_MONGO_DB_PORT)) + "/";
+  manager.setUri(uri);
+  manager.connect();
+  manager.init();
+  ASSERT_TRUE(manager.isConnected());
+  // Check collections
+  ASSERT_TRUE(manager.hasCollection("structures"));
+  ASSERT_TRUE(manager.hasCollection("calculations"));
+  ASSERT_TRUE(manager.hasCollection("properties"));
+  ASSERT_TRUE(manager.hasCollection("compounds"));
+  ASSERT_TRUE(manager.hasCollection("reactions"));
+  ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
+  // Wipe and check again
+  manager.wipe();
+  ASSERT_FALSE(manager.hasCollection("structures"));
+  ASSERT_FALSE(manager.hasCollection("calculations"));
+  ASSERT_FALSE(manager.hasCollection("properties"));
+  ASSERT_FALSE(manager.hasCollection("compounds"));
+  ASSERT_FALSE(manager.hasCollection("reactions"));
+  ASSERT_FALSE(manager.hasCollection("elementary_steps"));
+  ASSERT_FALSE(manager.hasCollection("flasks"));
+  // Init and check again
+  manager.init();
+  ASSERT_TRUE(manager.hasCollection("structures"));
+  ASSERT_TRUE(manager.hasCollection("calculations"));
+  ASSERT_TRUE(manager.hasCollection("properties"));
+  ASSERT_TRUE(manager.hasCollection("compounds"));
+  ASSERT_TRUE(manager.hasCollection("reactions"));
+  ASSERT_TRUE(manager.hasCollection("elementary_steps"));
+  ASSERT_TRUE(manager.hasCollection("flasks"));
+  // Clean
+  manager.wipe();
+  manager.disconnect();
+  ASSERT_FALSE(manager.isConnected());
+  manager.clearUri();
 }
 
 TEST_F(ManagerTest, RemoteWipe) {

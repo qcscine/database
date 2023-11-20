@@ -1,7 +1,7 @@
 /**
  * @file Calculation.h
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #ifndef DATABASE_CALCULATION_H_
@@ -60,6 +60,9 @@ class Structure;
  *    A free form string, for additional human relevant information.
  *  - \b 'executor'
  *    A free form string, set to identify the runner/executor that handled the calculation.
+ *  - \b 'restart_information'
+ *    A dictionary/map/document of strings to IDs that may ease restarting this calculation
+ *    with different settings to correct previous failures
  *  - \b 'auxiliaries'
  *    A dictionary/map/document of named IDs that may be useful when interpreting the results
  *    of the calculation. E.g. the calculation start by calculating a complex consisting of 2
@@ -469,6 +472,65 @@ class Calculation : public Object {
    * @throws MissingIDException Thrown if the object does not have an ID.
    */
   void clearAuxiliaries() const;
+
+  /*======================*
+   *  Restart Information
+   *======================*/
+
+  /**
+   * @brief Check if a restart information with the given key is present.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the restart information.
+   * @return true  If a restart information with the given key is present.
+   * @return false If no restart information with the given key is present.
+   */
+  bool hasRestartInformation(const std::string& key) const;
+  /**
+   * @brief Set a restart information.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the restart information.
+   * @param id The new ID.
+   */
+  void setRestartInformation(const std::string& key, const ID& id) const;
+  /**
+   * @brief Get a restart information
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @throws MissingIdOrField Thrown if the object or key cannot be found.
+   * @param key The key of the restart information.
+   * @return ID The current ID.
+   */
+  ID getRestartInformation(const std::string& key) const;
+  /**
+   * @brief Remove a single restart information if present.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param key The key of the restart information.
+   */
+  void removeRestartInformation(const std::string& key) const;
+  /**
+   * @brief Set (replace) all restart information at once.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @param restart information The new restart information.
+   */
+  void setRestartInformation(const std::map<std::string, ID>& restartInformation) const;
+  /**
+   * @brief Get restart information as a map.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   * @throws MissingIdOrField Thrown if the object not be found.
+   * @return std::map<std::string, ID> Total restart information.
+   */
+  std::map<std::string, ID> getRestartInformation() const;
+  /**
+   * @brief Clears all currently existing restart information.
+   * @throws MissingLinkedCollectionException Thrown if no collection is linked.
+   * @throws MissingIDException Thrown if the object does not have an ID.
+   */
+  void clearRestartInformation() const;
 
   /*=============*
    *  Raw Ouput

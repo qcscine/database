@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
-import scine_utilities as utils
 import scine_database as db
 import unittest
 import os
@@ -30,6 +29,12 @@ class ObjectTest(unittest.TestCase):
 
     def tearDown(self):
         self.manager.wipe()
+
+    def test_repr(self):
+        import scine_database  # noqa
+        i = db.ID()
+        j = eval(repr(i))
+        assert i == j
 
     def test_linkage(self):
         coll = self.manager.get_collection("properties")
@@ -85,14 +90,15 @@ class ObjectTest(unittest.TestCase):
         mock1 = db.NumberProperty.make("density_matrix", model, 42.12345, coll)
         sleep(1)
         mock2 = db.NumberProperty.make("density_matrix", model, 42.12345, coll)
-        mock1.created()
-        mock1.last_modified()
         assert mock1.has_created_timestamp()
         assert mock1.has_last_modified_timestamp()
+        assert mock2.has_created_timestamp()
+        assert mock2.has_last_modified_timestamp()
         assert mock1.older_than(mock2, False)
         assert mock1.older_than(mock2, True)
         mock1.touch()
         assert mock2.older_than(mock1, True)
+        assert not mock2.older_than(mock1, False)
 
     def test_dates_fails_one(self):
         mock = db.NumberProperty(db.ID())

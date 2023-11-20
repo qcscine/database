@@ -1,13 +1,14 @@
 /**
  * @file Model.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
 /* Internal Include */
 #include "Database/Objects/Model.h"
 /* External Includes */
+#include <Utils/DataStructures/PeriodicBoundaries.h>
 #include <Utils/Settings.h>
 #include <Utils/Strings.h>
 #include <math.h>
@@ -62,7 +63,7 @@ void Model::completeSettings(Utils::Settings& settings) {
     /*
      * method_family, program, and version
      * need to be set with knowledge of the calculator, they can not be set using just Settings.
-     * temperature, and electronicTemperature are set differently below
+     * temperature, pressure, and electronicTemperature are set differently below
      */
     if (std::find(_skipFields.begin(), _skipFields.end(), settingName) != _skipFields.end()) {
       continue;
@@ -81,9 +82,10 @@ void Model::completeSettings(Utils::Settings& settings) {
     }
   }
   /*
-   * temperatures
+   * temperatures / pressure
    */
-  std::vector<std::string> temperatureSettings = {SettingsNames::temperature, SettingsNames::electronicTemperature};
+  std::vector<std::string> temperatureSettings = {SettingsNames::temperature, SettingsNames::electronicTemperature,
+                                                  SettingsNames::pressure};
   for (const auto& tempSettingName : temperatureSettings) {
     const bool exists = settings.valueExists(tempSettingName);
     auto modelEntryRef = settingsModelPairs.at(tempSettingName);
@@ -97,7 +99,7 @@ void Model::completeSettings(Utils::Settings& settings) {
     }
     // we do not allow 'none' for temperatures if the setting exists
     if (exists && entryIsNone(modelEntryRef.get())) {
-      throw std::runtime_error("Settings expect a value as 'temperature' for " + tempSettingName + ", not 'none'.");
+      throw std::runtime_error("Settings expect a value for " + tempSettingName + ", not 'none'.");
     }
     // we do not allow 'any' for temperatures, model entry is ignored and default of settings is kept
     if (!entryIsAny(modelEntryRef.get())) {
@@ -118,7 +120,7 @@ void Model::completeModel(const Utils::Settings& settings) {
     /*
      * method_family, program, and version
      * need to be set with knowledge of the calculator, they can not be set using just Settings.
-     * temperature, and electronicTemperature are set differently below
+     * temperature, pressure, and electronicTemperature are set differently below
      */
     if (std::find(_skipFields.begin(), _skipFields.end(), settingName) != _skipFields.end()) {
       continue;
@@ -147,9 +149,10 @@ void Model::completeModel(const Utils::Settings& settings) {
     }
   }
   /*
-   * temperatures
+   * temperatures / pressure
    */
-  std::vector<std::string> temperatureSettings = {SettingsNames::temperature, SettingsNames::electronicTemperature};
+  std::vector<std::string> temperatureSettings = {SettingsNames::temperature, SettingsNames::electronicTemperature,
+                                                  SettingsNames::pressure};
   for (const auto& tempSettingName : temperatureSettings) {
     const bool exists = settings.valueExists(tempSettingName);
     auto modelEntryRef = settingsModelPairs.at(tempSettingName);
@@ -184,9 +187,12 @@ std::string Model::getStringRepresentation() const {
 }
 
 const std::vector<std::string>& Model::skipFields() {
-  static std::vector<std::string> fields = {Utils::SettingsNames::methodFamily, Utils::SettingsNames::program,
-                                            Utils::SettingsNames::version, Utils::SettingsNames::temperature,
-                                            Utils::SettingsNames::electronicTemperature};
+  static std::vector<std::string> fields = {Utils::SettingsNames::methodFamily,
+                                            Utils::SettingsNames::program,
+                                            Utils::SettingsNames::version,
+                                            Utils::SettingsNames::temperature,
+                                            Utils::SettingsNames::electronicTemperature,
+                                            Utils::SettingsNames::pressure};
   return fields;
 }
 
@@ -194,6 +200,8 @@ bool Model::operator==(const Model& rhs) const {
   auto lhsPairs = this->getConstSettingsModelPairs(); // necessary to call here because of pybind
   auto rhsPairs = rhs.getConstSettingsModelPairs();
   auto rhsIterator = rhsPairs.begin();
+  std::array<std::string, 3> doubleSettings = {SettingsNames::temperature, SettingsNames::electronicTemperature,
+                                               SettingsNames::pressure};
   for (auto& settingModelPair : lhsPairs) {
     auto lhsModelEntryRef = settingModelPair.second;
     auto rhsModelEntryRef = rhsIterator->second;
@@ -203,7 +211,43 @@ bool Model::operator==(const Model& rhs) const {
       rhsIterator++;
       continue;
     }
-    if (lhsModelEntryRef.get() != rhsModelEntryRef.get()) {
+    if (!Utils::caseInsensitiveEqual(lhsModelEntryRef.get(), rhsModelEntryRef.get())) {
+      // make sure we don't have a potential double value
+      std::string name = settingModelPair.first;
+      if (std::find(doubleSettings.begin(), doubleSettings.end(), name) != doubleSettings.end()) {
+        // double values are possible
+        // we are doing try/catch instead of C style checks because the catch case should be uncommon and try has zero
+        // cost
+        try {
+          auto lhsDouble = std::stod(lhsModelEntryRef.get());
+          auto rhsDouble = std::stod(rhsModelEntryRef.get());
+          if ((std::fabs(lhsDouble) - std::fabs(rhsDouble)) < 1e-12) {
+            // double equality
+            rhsIterator++;
+            continue;
+          }
+        }
+        catch (...) {
+          // could not cast to double; any/none have been handled earlier
+          return false;
+        }
+      }
+      // make sure we don't have equivalent periodic boundaries
+      else if (name == Utils::SettingsNames::periodicBoundaries) {
+        try {
+          auto lhsPbc = Utils::PeriodicBoundaries(lhsModelEntryRef.get());
+          auto rhsPbc = Utils::PeriodicBoundaries(rhsModelEntryRef.get());
+          if (lhsPbc == rhsPbc) {
+            // pbc equality
+            rhsIterator++;
+            continue;
+          }
+        }
+        catch (...) {
+          // were not valid PBC, possible for 'any' vs 'none' case where we want a 'false' anyway
+          return false;
+        }
+      }
       return false;
     }
     rhsIterator++;

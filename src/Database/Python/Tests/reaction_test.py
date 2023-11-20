@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
-import scine_utilities as utils
 import scine_database as db
 import unittest
 import os
@@ -40,7 +39,7 @@ class ReactionTest(unittest.TestCase):
         coll = self.manager.get_collection("reactions")
         id1 = db.ID()
         id2 = db.ID()
-        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND],  [db.CompoundOrFlask.FLASK])
+        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND], [db.CompoundOrFlask.FLASK])
         assert reaction.has_id()
 
         # Checks
@@ -73,7 +72,7 @@ class ReactionTest(unittest.TestCase):
         coll = self.manager.get_collection("reactions")
         id1 = db.ID()
         id2 = db.ID()
-        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND],  [db.CompoundOrFlask.FLASK])
+        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND], [db.CompoundOrFlask.FLASK])
         assert reaction.has_id()
 
         # Checks
@@ -106,7 +105,7 @@ class ReactionTest(unittest.TestCase):
         coll = self.manager.get_collection("reactions")
         id1 = db.ID()
         id2 = db.ID()
-        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND],  [db.CompoundOrFlask.FLASK])
+        reaction = db.Reaction.make([id1], [id2], coll, [db.CompoundOrFlask.COMPOUND], [db.CompoundOrFlask.FLASK])
         assert reaction.has_id()
 
         # Checks

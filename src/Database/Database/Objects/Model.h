@@ -1,7 +1,7 @@
 /**
  * @file Model.h
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #ifndef DATABASE_MODEL_H_
@@ -92,6 +92,7 @@ class Model {
   std::string version = "any";
 
   std::string temperature = "298.15";
+  std::string pressure = "101325.0";
   std::string electronicTemperature = "any";
 
   std::string solvation = "none";
@@ -145,6 +146,7 @@ class Model {
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::program, std::ref(program)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::version, std::ref(version)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::temperature, std::ref(temperature)));
+    settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::pressure, std::ref(pressure)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::electronicTemperature, std::ref(electronicTemperature)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::solvation, std::ref(solvation)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::solvent, std::ref(solvent)));
@@ -164,6 +166,7 @@ class Model {
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::program, std::cref(program)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::version, std::cref(version)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::temperature, std::cref(temperature)));
+    settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::pressure, std::cref(pressure)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::electronicTemperature, std::cref(electronicTemperature)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::solvation, std::cref(solvation)));
     settingsModelPairs.emplace(std::make_pair(Utils::SettingsNames::solvent, std::cref(solvent)));

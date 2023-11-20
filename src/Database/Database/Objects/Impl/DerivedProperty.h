@@ -1,7 +1,7 @@
 /**
  * @file DerivedProperty.h
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -18,6 +18,7 @@
 #include <boost/optional.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
+#include <bsoncxx/exception/exception.hpp>
 #include <bsoncxx/types.hpp>
 #include <memory>
 #include <mongocxx/collection.hpp>
@@ -25,6 +26,24 @@
 
 namespace Scine {
 namespace Database {
+
+namespace {
+
+template<typename T>
+long getIntegerFromElement(T v) {
+  try {
+    return v.get_int64();
+  }
+  catch (const bsoncxx::exception&) {
+    return static_cast<long>(v.get_int32());
+  }
+}
+
+long getInteger(bsoncxx::document::view& view, const std::string& key) {
+  return getIntegerFromElement<bsoncxx::document::element>(view[key]);
+}
+} // namespace
+
 namespace Serialization {
 
 template<typename T>
@@ -127,7 +146,7 @@ struct Serializer<Eigen::VectorXd> {
   }
 
   static Eigen::VectorXd deserialize(bsoncxx::document::view view) {
-    const Eigen::Index size = view["size"].get_int64();
+    const Eigen::Index size = getInteger(view, "size");
     Eigen::VectorXd ret(size);
     bsoncxx::array::view data = view["data"].get_array();
     Eigen::Index idx = 0;
@@ -135,6 +154,7 @@ struct Serializer<Eigen::VectorXd> {
       ret.data()[idx] = it.get_double();
       ++idx;
     }
+
     return ret;
   }
 };
@@ -161,8 +181,8 @@ struct Serializer<Eigen::MatrixXd> {
   }
 
   static Eigen::MatrixXd deserialize(bsoncxx::document::view view) {
-    const Eigen::Index cols = view["cols"].get_int64();
-    const Eigen::Index rows = view["rows"].get_int64();
+    const Eigen::Index cols = getInteger(view, "cols");
+    const Eigen::Index rows = getInteger(view, "rows");
     Eigen::MatrixXd ret(rows, cols);
     bsoncxx::array::view data = view["data"].get_array();
     Eigen::Index idx = 0;
@@ -210,9 +230,9 @@ struct Serializer<Eigen::SparseMatrix<double>> {
   }
 
   static Eigen::SparseMatrix<double> deserialize(bsoncxx::document::view view) {
-    const Eigen::Index cols = view["cols"].get_int64();
-    const Eigen::Index rows = view["rows"].get_int64();
-    const Eigen::Index size = view["size"].get_int64();
+    const Eigen::Index cols = getInteger(view, "cols");
+    const Eigen::Index rows = getInteger(view, "rows");
+    const Eigen::Index size = getInteger(view, "size");
 
     // Read triplets
     std::vector<Eigen::Triplet<double>> triplets;
@@ -228,7 +248,8 @@ struct Serializer<Eigen::SparseMatrix<double>> {
       auto v = *values_it++;
       auto c = *col_it++;
       auto r = *row_it++;
-      triplets.emplace_back(r.get_int64(), c.get_int64(), v.get_double());
+      triplets.emplace_back(getIntegerFromElement<bsoncxx::array::element>(r),
+                            getIntegerFromElement<bsoncxx::array::element>(c), v.get_double());
     }
 
     Eigen::SparseMatrix<double> ret(rows, cols);

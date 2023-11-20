@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
@@ -182,6 +182,10 @@ class ElementaryStepTest(unittest.TestCase):
         assert db.ElementaryStepType.REGULAR, step.get_type()
         step.set_type(db.ElementaryStepType.BARRIERLESS)
         assert db.ElementaryStepType.BARRIERLESS == step.get_type()
+        assert db.ElementaryStepType.REGULAR != step.get_type()
+        step.set_type(db.ElementaryStepType.MODEL_TRANSFORMATION)
+        assert db.ElementaryStepType.MODEL_TRANSFORMATION == step.get_type()
+        assert db.ElementaryStepType.BARRIERLESS != step.get_type()
         assert db.ElementaryStepType.REGULAR != step.get_type()
 
     def test_type_fails_collection(self):

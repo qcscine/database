@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #include <Database/Collection.h>
@@ -171,6 +171,10 @@ TEST_F(ElementaryStepTest, Type) {
   step.setType(ElementaryStepType::BARRIERLESS);
   ASSERT_EQ(ElementaryStepType::BARRIERLESS, step.getType());
   ASSERT_NE(ElementaryStepType::REGULAR, step.getType());
+  step.setType(ElementaryStepType::MODEL_TRANSFORMATION);
+  ASSERT_EQ(ElementaryStepType::MODEL_TRANSFORMATION, step.getType());
+  ASSERT_NE(ElementaryStepType::REGULAR, step.getType());
+  ASSERT_NE(ElementaryStepType::BARRIERLESS, step.getType());
 }
 
 TEST_F(ElementaryStepTest, TypeFails1) {

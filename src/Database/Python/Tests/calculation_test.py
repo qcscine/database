@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
@@ -38,6 +38,7 @@ class CalculationTest(unittest.TestCase):
         # Check Fields
         status = calc.get_status()
         auxiliaries = calc.get_auxiliaries()
+        restart_information = calc.get_restart_information()
         structures = calc.get_structures()
         settings = calc.get_settings()
         model = calc.get_model()
@@ -48,6 +49,7 @@ class CalculationTest(unittest.TestCase):
 
         assert status == db.Status.CONSTRUCTION
         assert len(auxiliaries) == 0
+        assert len(restart_information) == 0
         assert len(structures) == 3
         assert len(settings) == 0
         assert len(results.structure_ids) == 0
@@ -190,6 +192,9 @@ class CalculationTest(unittest.TestCase):
         model.embedding = "h"
         model.periodic_boundaries = "i"
         model.external_field = "j"
+        model.pressure = "0.0"
+        model.temperature = "1.0"
+        model.electronic_temperature = 1.0
         calc.set_model(model)
         model_db = calc.get_model()
         assert model.spin_mode == model_db.spin_mode
@@ -201,6 +206,9 @@ class CalculationTest(unittest.TestCase):
         assert model.embedding == model_db.embedding
         assert model.periodic_boundaries == model_db.periodic_boundaries
         assert model.external_field == model_db.external_field
+        assert model.pressure == model_db.pressure
+        assert model.temperature == model_db.temperature
+        assert model.electronic_temperature == model_db.electronic_temperature
 
     def test_model_fails_collection(self):
         calc = db.Calculation()
@@ -535,6 +543,68 @@ class CalculationTest(unittest.TestCase):
         self.assertRaises(RuntimeError, lambda: calc.set_auxiliaries({}))
         self.assertRaises(RuntimeError, lambda: calc.get_auxiliaries())
         self.assertRaises(RuntimeError, lambda: calc.clear_auxiliaries())
+
+    def test_restart_information(self):
+        s1 = db.ID()
+        s2 = db.ID()
+        s3 = db.ID()
+        coll = self.manager.get_collection("calculations")
+        model = db.Model("dft", "pbe", "def2-svp")
+        job = db.Job("geo_opt")
+        calc = db.Calculation.make(model, job, [s1, s2, s3], coll)
+        assert calc.has_id()
+
+        # Restart information Functionalities
+        id1 = db.ID()
+        id2 = db.ID()
+        id3 = db.ID()
+        id4 = db.ID()
+        id5 = db.ID()
+        calc.set_restart_information("foo", id1)
+        calc.set_restart_information("bar", id2)
+        calc.set_restart_information("foobar", id3)
+        calc.set_restart_information("foobar", id2)
+        assert calc.has_restart_information("foo")
+        info = {
+            "foo": id3,
+            "bar": id4,
+            "barfoo": id5
+        }
+        calc.remove_restart_information("foo")
+        assert not calc.has_restart_information("foo")
+        calc.set_restart_information(info)
+        assert calc.has_restart_information("foo")
+        assert calc.get_restart_information("foo") == id3
+        assert not calc.has_restart_information("foobar")
+        calc.clear_restart_information()
+        assert not calc.has_restart_information("foo")
+        assert not calc.has_restart_information("bar")
+        assert not calc.has_restart_information("foobar")
+        assert not calc.has_restart_information("barfoo")
+
+    def test_restart_information_fails_collection(self):
+        calc = db.Calculation()
+        self.assertRaises(
+            RuntimeError, lambda: calc.set_restart_information("foo", db.ID()))
+        self.assertRaises(RuntimeError, lambda: calc.get_restart_information("foo"))
+        self.assertRaises(RuntimeError, lambda: calc.has_restart_information("foo"))
+        self.assertRaises(RuntimeError, lambda: calc.remove_restart_information("foo"))
+        self.assertRaises(RuntimeError, lambda: calc.set_restart_information({}))
+        self.assertRaises(RuntimeError, lambda: calc.get_restart_information())
+        self.assertRaises(RuntimeError, lambda: calc.clear_restart_information())
+
+    def test_restart_information_fails_id(self):
+        coll = self.manager.get_collection("calculations")
+        calc = db.Calculation()
+        calc.link(coll)
+        self.assertRaises(
+            RuntimeError, lambda: calc.set_restart_information("foo", db.ID()))
+        self.assertRaises(RuntimeError, lambda: calc.get_restart_information("foo"))
+        self.assertRaises(RuntimeError, lambda: calc.has_restart_information("foo"))
+        self.assertRaises(RuntimeError, lambda: calc.remove_restart_information("foo"))
+        self.assertRaises(RuntimeError, lambda: calc.set_restart_information({}))
+        self.assertRaises(RuntimeError, lambda: calc.get_restart_information())
+        self.assertRaises(RuntimeError, lambda: calc.clear_restart_information())
 
     def test_raw_output(self):
         s1 = db.ID()

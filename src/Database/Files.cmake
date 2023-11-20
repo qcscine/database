@@ -17,12 +17,22 @@ set(DATABASE_PYTHON_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/Python/LayoutPython.cpp
 )
 
+set(DATABASE_PURE_PYTHON_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/energy_query_functions.py
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/compound_and_flask_creation.py
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/concentration_query_functions.py
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/insert_concentration.py
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/queries.py
+  ${CMAKE_CURRENT_SOURCE_DIR}/Python/Tests/test_database_setup.py
+)
+
 set(DATABASE_TEST_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/BoolPropertyTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/CollectionTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/DenseMatrixPropertyTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ElementaryStepTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ExceptionsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Tests/LayoutTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/NumberPropertyTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ManagerTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Tests/ModelTest.cpp

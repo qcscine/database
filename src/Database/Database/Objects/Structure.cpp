@@ -1,7 +1,7 @@
 /**
  * @file Structure.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -420,15 +420,13 @@ std::vector<ID> Structure::queryProperties(const std::string& key, const Model& 
   const auto& ids = it->second;
 
   // Setup selection for query in properties
-  bsoncxx::builder::basic::array array;
-  for (const auto& id : ids) {
-    array.append(id.bsoncxx());
-  }
-
-  auto selection = document{} << "_id" << open_document << "$in" << array << close_document << finalize;
-  auto cursor = collection->mongocxx().find(selection.view());
   std::vector<ID> ret;
-  for (const auto& doc : cursor) {
+  for (const auto& id : ids) {
+    auto selection = document{} << "_id" << id.bsoncxx() << finalize;
+    auto optional = collection->mongocxx().find_one(selection.view());
+    if (!optional)
+      throw Exceptions::MissingIdOrField();
+    auto doc = optional.value().view();
     Model docModel(doc["model"].get_document().view());
     if (docModel == model) {
       ret.emplace_back(doc["_id"].get_oid().value);

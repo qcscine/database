@@ -1,7 +1,7 @@
 /**
  * @file ModelPython.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -71,6 +71,17 @@ void init_model(pybind11::module& m) {
       },
       "Temperature for thermodynamical property calculations");
   model.def_property(
+      "pressure", [&](Model& self) { return self.pressure; },
+      [&](Model& self, boost::variant<std::string, double> temp) {
+        if (temp.type() == typeid(double)) {
+          self.pressure = std::to_string(boost::get<double>(temp));
+        }
+        else {
+          self.pressure = boost::get<std::string>(temp);
+        }
+      },
+      "Pressure for thermodynamical property calculations");
+  model.def_property(
       "electronic_temperature", [&](Model& self) { return self.electronicTemperature; },
       [&](Model& self, boost::variant<std::string, double> temp) {
         if (temp.type() == typeid(double)) {
@@ -117,10 +128,10 @@ void init_model(pybind11::module& m) {
         /* Return a tuple that fully encodes the state of the object */
         return pybind11::make_tuple(m.methodFamily, m.method, m.basisSet, m.spinMode, m.program, m.version, m.solvation,
                                     m.solvent, m.embedding, m.periodicBoundaries, m.externalField, m.temperature,
-                                    m.electronicTemperature);
+                                    m.electronicTemperature, m.pressure);
       },
       [](pybind11::tuple t) { // __setstate__
-        if (t.size() != 13)
+        if (t.size() != 14)
           throw std::runtime_error("Invalid state for Model!");
 
         /* Create a new C++ instance */
@@ -135,6 +146,7 @@ void init_model(pybind11::module& m) {
         m.externalField = t[10].cast<std::string>();
         m.temperature = t[11].cast<std::string>();
         m.electronicTemperature = t[12].cast<std::string>();
+        m.pressure = t[13].cast<std::string>();
 
         return m;
       }));

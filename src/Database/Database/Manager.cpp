@@ -1,7 +1,7 @@
 /**
  * @file Manager.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -35,14 +35,18 @@ using bsoncxx::builder::stream::open_document;
 namespace Scine {
 namespace Database {
 
-Credentials::Credentials(std::string hostname, int port, std::string databaseName, std::string username,
-                         std::string password, std::string authDatabase)
+Credentials::Credentials(std::string hostname, int port, std::string databaseName, std::string username, std::string password,
+                         std::string authDatabase, std::string replicaSet, bool sslEnabled, bool retryWrites)
   : hostname(std::move(hostname)),
     port(port),
     databaseName(std::move(databaseName)),
     username(std::move(username)),
     password(std::move(password)),
-    authDatabase(std::move(authDatabase)) {
+    authDatabase(std::move(authDatabase)),
+    replicaSet(std::move(replicaSet)),
+    sslEnabled(std::move(sslEnabled)),
+    retryWrites(std::move(retryWrites)) {
+  specialCharactersCheck(databaseName);
 }
 
 Manager::Manager() {
@@ -58,23 +62,20 @@ Manager::~Manager() {
     this->disconnect();
 }
 
-void Manager::connect(bool expectContent, unsigned int connectionTimeout, unsigned int accessTimeout) {
+void Manager::connect(bool expectContent, unsigned int connectionTimeout, unsigned int accessTimeout,
+                      std::string replicaSet, bool sslEnabled, bool retryWrites) {
   if (!this->hasCredentials())
     throw Exceptions::MissingCredentialsException();
   if (this->isConnected())
     this->disconnect();
-  std::string uri;
-  if (!_credentials.username.empty() and !_credentials.password.empty()) {
-    uri = "mongodb://" + _credentials.username + ":" + _credentials.password + "@" + _credentials.hostname + ":" +
-          std::to_string(_credentials.port) + "/" + _credentials.authDatabase +
-          "?socketTimeoutMS=" + std::to_string(accessTimeout * 1000) +
-          "&connectTimeoutMS=" + std::to_string(connectionTimeout * 1000);
+  if (this->hasCredentials() and !this->_uri) {
+    this->_credentials.connectionTimeout = connectionTimeout;
+    this->_credentials.accessTimeout = accessTimeout;
+    this->_credentials.replicaSet = replicaSet;
+    this->_credentials.sslEnabled = sslEnabled;
+    this->_credentials.retryWrites = retryWrites;
   }
-  else {
-    uri = "mongodb://" + _credentials.hostname + ":" + std::to_string(_credentials.port) +
-          "/?socketTimeoutMS=" + std::to_string(accessTimeout * 1000) +
-          "&connectTimeoutMS=" + std::to_string(connectionTimeout * 1000);
-  }
+  std::string uri = this->getUri();
   try {
     _connection = std::make_unique<mongocxx::client>(mongocxx::uri{uri});
   }
@@ -94,6 +95,48 @@ void Manager::connect(bool expectContent, unsigned int connectionTimeout, unsign
   }
 }
 
+void Manager::setUri(std::string uri) {
+  this->_uri = std::make_unique<std::string>(uri);
+}
+
+std::string Manager::getUri() const {
+  if (this->_uri) {
+    return *(this->_uri);
+  }
+  // The standard URI connection scheme has the form:
+  // mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]
+  // https://www.mongodb.com/docs/manual/reference/connection-string/#connection-string-uri-format
+
+  std::string uri = "mongodb://";
+
+  // Username and password
+  if (!_credentials.username.empty() and !_credentials.password.empty()) {
+    uri += _credentials.username + ":" + _credentials.password + "@";
+  }
+
+  // Hostname (required) and port (27017 by default)
+  uri += _credentials.hostname + ":" + std::to_string(_credentials.port) + "/";
+
+  // Authentication database
+  if (!_credentials.authDatabase.empty()) {
+    uri += _credentials.authDatabase;
+  }
+
+  // Options
+  uri += "?socketTimeoutMS=" + std::to_string(_credentials.accessTimeout * 1000) +
+         "&connectTimeoutMS=" + std::to_string(_credentials.connectionTimeout * 1000) +
+         "&ssl=" + std::to_string(_credentials.sslEnabled) + "&retryWrites=" + std::to_string(_credentials.retryWrites);
+
+  if (!_credentials.replicaSet.empty()) {
+    uri += "&replicaSet=" + _credentials.replicaSet;
+  }
+
+  return uri;
+}
+void Manager::clearUri() {
+  this->_uri = nullptr;
+}
+
 void Manager::setCredentials(Credentials credentials) {
   _credentials = std::move(credentials);
 }
@@ -107,6 +150,7 @@ std::string Manager::getDatabaseName() const {
 void Manager::setDatabaseName(std::string name) {
   if (!this->hasCredentials())
     throw Exceptions::MissingCredentialsException();
+  specialCharactersCheck(name);
   _credentials.databaseName = std::move(name);
 }
 
@@ -210,6 +254,20 @@ void Manager::init(bool moreIndices) {
     mongocxx::collection structures = db.collection("structures");
     auto label = document{} << "label" << 1 << finalize;
     structures.create_index(std::move(label));
+    auto structureDisabled = document{} << "exploration_disabled" << 1 << "analysis_disabled" << 1 << finalize;
+    structures.create_index(std::move(structureDisabled));
+
+    mongocxx::collection compounds = db.collection("compounds");
+    auto compoundDisabled = document{} << "exploration_disabled" << 1 << "analysis_disabled" << 1 << finalize;
+    compounds.create_index(std::move(compoundDisabled));
+
+    mongocxx::collection elementarySteps = db.collection("elementary_steps");
+    auto elementaryStepDisabled = document{} << "exploration_disabled" << 1 << "analysis_disabled" << 1 << finalize;
+    elementarySteps.create_index(std::move(elementaryStepDisabled));
+
+    mongocxx::collection reactions = db.collection("reactions");
+    auto reactionDisabled = document{} << "exploration_disabled" << 1 << "analysis_disabled" << 1 << finalize;
+    reactions.create_index(std::move(reactionDisabled));
 
     mongocxx::collection calculations = db.collection("calculations");
     // clang-format off
@@ -257,14 +315,7 @@ void Manager::wipe(bool remote) {
   else {
     if (!this->hasCredentials())
       throw Exceptions::MissingCredentialsException();
-    std::string uri;
-    if (!_credentials.username.empty() and !_credentials.password.empty()) {
-      uri = "mongodb://" + _credentials.username + ":" + _credentials.password + "@" + _credentials.hostname + ":" +
-            std::to_string(_credentials.port) + "/" + _credentials.authDatabase;
-    }
-    else {
-      uri = "mongodb://" + _credentials.hostname + ":" + std::to_string(_credentials.port);
-    }
+    std::string uri = this->getUri();
     auto tmpConnection = std::make_unique<mongocxx::client>(mongocxx::uri{uri});
     tmpConnection->database(_credentials.databaseName).drop();
   }

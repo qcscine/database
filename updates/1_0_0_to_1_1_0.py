@@ -82,7 +82,8 @@ if extract_duplicates:
                                      )
 # Rename compound field to aggregate field
 db["structures"].update_many({"compound": {"$exists": True}}, {"$rename": {"compound": "aggregate"}})
-
+# Add calculations field to every structure
+db["structures"].update_many({}, {"$set": {"calculations": {}}})
 
 # Update version
 if "_db_meta_data" in db.list_collection_names():

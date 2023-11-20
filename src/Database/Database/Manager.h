@@ -1,7 +1,7 @@
 /**
  * @file Manager.h
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #ifndef DATABASE_MANAGER_H_
@@ -10,6 +10,7 @@
 /* External Includes */
 #include <chrono>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace mongocxx {
@@ -22,6 +23,18 @@ namespace Scine {
 namespace Database {
 
 class Collection;
+
+inline void specialCharactersCheck(const std::string& databaseName) {
+  if (databaseName.size() > 64) {
+    throw std::runtime_error("Database name '" + databaseName + "' is too long.");
+  }
+  const std::array<const char, 12> forbiddens{'/', '\\', '.', ' ', '"', '$', '*', '<', '>', ':', '|', '?'};
+  for (const auto& f : forbiddens) {
+    if (databaseName.find(f) != std::string::npos) {
+      throw std::runtime_error("Special character '" + std::string{f} + "' is forbidden in a database name");
+    }
+  }
+}
 
 /**
  * @class Credentials Manager.h
@@ -39,9 +52,13 @@ class Credentials {
    * @param username The username, if required.
    * @param password The password, if required.
    * @param authDatabase The authentication database, if authentication is required.
+   * @param replicaSet Specifies the name of the replica set.
+   * @param sslEnabled Enable/Disable SSL for the connection.
+   * @param retryWrites Enable/Disable retryable writes.
    */
   Credentials(std::string hostname, int port, std::string databaseName, std::string username = std::string{},
-              std::string password = std::string{}, std::string authDatabase = std::string{});
+              std::string password = std::string{}, std::string authDatabase = std::string{},
+              std::string replicaSet = std::string{}, bool sslEnabled = false, bool retryWrites = false);
   /// @brief The name of the host running the database.
   std::string hostname = "localhost";
   /// @brief The port the database listens on.
@@ -54,10 +71,21 @@ class Credentials {
   std::string password;
   /// @brief The authentication database, if authentication is required.
   std::string authDatabase;
+  /// @brief The time in seconds for the initial connection attempt to time out.
+  unsigned int connectionTimeout = 60;
+  /// @brief The time in seconds for each action on the DB to time out.
+  unsigned int accessTimeout = 0;
+  /// @brief Specifies the name of the replica set.
+  std::string replicaSet = std::string{};
+  /// @brief Enable/Disable SSL for the connection.
+  bool sslEnabled = false;
+  /// @brief Enable/Disable retryable writes.
+  bool retryWrites = false;
 
   bool operator==(const Credentials& rhs) const {
     return this->hostname == rhs.hostname && this->port == rhs.port && this->databaseName == rhs.databaseName &&
-           this->username == rhs.username && this->password == rhs.password && this->authDatabase == rhs.authDatabase;
+           this->username == rhs.username && this->password == rhs.password && this->authDatabase == rhs.authDatabase &&
+           this->replicaSet == rhs.replicaSet && this->sslEnabled == rhs.sslEnabled && this->retryWrites == rhs.retryWrites;
   }
 
   bool operator!=(const Credentials& rhs) const {
@@ -88,9 +116,39 @@ class Manager {
    */
   void setCredentials(Credentials credentials);
   /**
+   * @brief Set a URI connection string directly.
+   *
+   * If set, credentials will be ignored.
+   * In order to restore non URI based behaviour set URI to be empty or call
+   * clearUri().
+   *
+   * @param uri The new URI connection string.
+   */
+  void setUri(std::string uri);
+  /**
+   * @brief The current URI connection string.
+   *
+   * If no such string has been set by the user, will generate string based
+   * on credentials.
+   *
+   * @return std::string The URI.
+   */
+  std::string getUri() const;
+  /**
+   * @brief Removes any stored URI.
+   *
+   * Connection details will be generated based on the stored credentials until
+   * another URI is set using setUri().
+   *
+   */
+  void clearUri();
+  /**
    * @brief Connect to the database using the current credentials.
    *
    * Values of zero disable the respective timeout.
+   * Timeout arguments only apply if connection is based on the stored
+   * credentials, if a URI has been provided it needs to include these settings
+   * already.
    * For a better understanding of these timeouts see:
    *  https://docs.mongodb.com/manual/reference/connection-string/
    *
@@ -99,10 +157,14 @@ class Manager {
    *                          attempt to time out.
    * @param accessTimeout     The time in seconds for each action on the DB to
    *                          time out.
+   * @param replicaSet        Specifies the name of the replica set.
+   * @param sslEnabled        Enable/Disable SSL for the connection.
+   * @param retryWrites       Enable/Disable retryable writes.
    *
    * Will disconnect first if there is a connection present.
    */
-  void connect(bool expectContent = false, unsigned int connectionTimeout = 60, unsigned int accessTimeout = 0);
+  void connect(bool expectContent = false, unsigned int connectionTimeout = 60, unsigned int accessTimeout = 0,
+               std::string replicaSet = std::string{}, bool sslEnabled = false, bool retryWrites = false);
   /**
    * @brief Disconnect the current connection.
    * @throws MissingCredentialsException Thrown if no credentials are set.
@@ -121,6 +183,9 @@ class Manager {
    * @return Credentials The current credentials.
    */
   const Credentials& getCredentials() const;
+  //! Build connection string URI.
+  std::string getConnectionURI(unsigned int connectionTimeout, unsigned int accessTimeout, std::string replicaSet,
+                               bool sslEnabled, bool retryWrites) const;
   /**
    * @brief Get the current database name.
    *
@@ -225,6 +290,7 @@ class Manager {
 
  private:
   Credentials _credentials;
+  std::unique_ptr<std::string> _uri;
   std::unique_ptr<mongocxx::v_noabi::client> _connection;
 };
 

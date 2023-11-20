@@ -6,6 +6,7 @@ doc/doxygen_warnings.txt
 tmp_clang_*
 
 # hidden files
+.devcontainer/
 *.swp
 .vscode/*
 .project

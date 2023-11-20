@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
@@ -8,6 +8,7 @@ import scine_utilities as utils
 import scine_database as db
 import unittest
 import os
+import pickle
 
 
 class ModelTest(unittest.TestCase):
@@ -27,6 +28,7 @@ class ModelTest(unittest.TestCase):
             "embedding": "11",
             "periodic_boundaries": "12",
             "external_field": "none",
+            "pressure": 100000.0
         })
 
         model = db.Model("should-not-change", "any", "any")
@@ -40,6 +42,7 @@ class ModelTest(unittest.TestCase):
         model.embedding = "any"
         model.periodic_boundaries = "any"
         model.external_field = ""
+        model.pressure = "100000.0"
         model.complete_model(settings)
 
         assert float(model.temperature) == 1.0
@@ -55,6 +58,7 @@ class ModelTest(unittest.TestCase):
         assert model.embedding == "11"
         assert model.periodic_boundaries == "12"
         assert model.external_field == ""
+        assert abs(float(model.pressure) - 100000.0) < 1e-9
 
         # check if we throw because of collision
         model.embedding = "something"
@@ -75,6 +79,7 @@ class ModelTest(unittest.TestCase):
             "embedding": "any",
             "periodic_boundaries": "",
             "external_field": "",
+            "pressure": 100000.0,
         })
         model = db.Model("should-not-change", "any", "def2-tzvp")
         model.program = "should-not-change"
@@ -87,6 +92,7 @@ class ModelTest(unittest.TestCase):
         model.embedding = "fde"
         model.periodic_boundaries = "none"
         model.external_field = ""
+        model.pressure = "100000.0"
 
         model.complete_settings(settings)
 
@@ -141,6 +147,7 @@ class ModelTest(unittest.TestCase):
             "embedding",
             "periodic_boundaries",
             "external_field",
+            "pressure"
         ]
         m.temperature = 0.0
         m.electronic_temperature = "1.0"
@@ -155,6 +162,7 @@ class ModelTest(unittest.TestCase):
         m.embedding = "10"
         m.periodic_boundaries = "11"
         m.external_field = "12"
+        m.pressure = "13.0"
         s = str(m)
         for name in names:
             for line in s.splitlines():
@@ -162,3 +170,12 @@ class ModelTest(unittest.TestCase):
                 if target in line:
                     break
             assert target in line
+
+    def test_model_pickle(self):
+        model = db.Model("dft", "something", "", "none")
+        with open("test_model_pickle.pkl", "wb") as f:
+            pickle.dump(model, f)
+        with open("test_model_pickle.pkl", "rb") as f:
+            loaded_model = pickle.load(f)
+        assert loaded_model == model
+        os.remove("test_model_pickle.pkl")

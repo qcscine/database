@@ -1,5 +1,5 @@
 __copyright__ = """This code is licensed under the 3-clause BSD license.
-Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
 See LICENSE.txt for details.
 """
 
@@ -54,14 +54,14 @@ def collect_data(pkg_name: str) -> Dict[str, List[str]]:
 setuptools.setup(
     name="scine_database",
     version="@Database_VERSION@",
-    author="ETH Zurich, Laboratory for Physical Chemistry, Reiher Group",
+    author="ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group",
     author_email="scine@phys.chem.ethz.ch",
     description="SCINE database utilities for chemical reaction networks",
     long_description=long_description,
     url="https://www.scine.ethz.ch",
     packages=["scine_database"],
     package_data=collect_data("scine_database"),
-    nstall_requires=["scine_utilities"],
+    install_requires=["scine_utilities"],
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: C++",

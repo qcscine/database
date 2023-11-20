@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -29,9 +29,11 @@ class CustomIterator {
 
  public:
   CustomIterator(Collection& coll, bsoncxx::document::view_or_value query) {
-    mongocxx::options::find opts;
-    opts.no_cursor_timeout(true);
-    _impl = std::make_shared<Impl>(coll, query, opts);
+    mongocxx::options::find options;
+    options.no_cursor_timeout(true);
+    auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+    options.projection(projection.view());
+    _impl = std::make_shared<Impl>(coll, query, options);
   }
   T operator*() {
     return T(ID((*(_impl->_ptr))["_id"].get_value().get_oid().value));

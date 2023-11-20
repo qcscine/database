@@ -1,7 +1,7 @@
 /**
  * @file ObjectPython.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -52,6 +52,7 @@ void init_id(pybind11::module& m) {
       "__le__", [](const ID& a, const ID& b) { return a <= b; }, pybind11::is_operator());
   id.def(
       "__le__", [](const ID& a, const std::string& b) { return a.string() <= b; }, pybind11::is_operator());
+  id.def("__repr__", [](const ID& id) { return "scine_database.ID('" + id.string() + "')"; });
   id.def(pybind11::pickle(
       [](const ID& id) { //__getstate__
         return id.string();

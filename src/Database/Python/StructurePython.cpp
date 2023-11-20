@@ -1,7 +1,7 @@
 /**
  * @file StructurePython.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -13,7 +13,7 @@
 #include <Database/Objects/Structure.h>
 #include <Utils/Geometry/AtomCollection.h>
 #include <Utils/Geometry/ElementInfo.h>
-#include <Utils/IO/ChemicalFileFormats/XyzStreamHandler.h>
+#include <Utils/IO/ChemicalFileFormats/ChemicalFileHandler.h>
 #include <Utils/Pybind.h>
 #include <Utils/Typenames.h>
 #include <pybind11/eigen.h>
@@ -26,34 +26,26 @@ using namespace Scine::Database;
 
 namespace {
 
-AtomCollection fromXyz(const std::string& xyz_file) {
-  std::ifstream file(xyz_file);
-  if (!file) {
-    throw std::runtime_error("File: '" + xyz_file + "' not found!");
-  }
-  return XyzStreamHandler::read(file);
+Structure makeHelper1(const std::string& path, const int charge, const int multiplicity, const Object::CollectionPtr& coll) {
+  return Structure::create(ChemicalFileHandler::read(path).first, charge, multiplicity, coll);
 }
 
-Structure makeHelper1(const std::string& xyz, const int charge, const int multiplicity, const Object::CollectionPtr& coll) {
-  return Structure::create(fromXyz(xyz), charge, multiplicity, coll);
-}
-
-Structure makeHelper2(const std::string& xyz, const int charge, const int multiplicity, const Model& model,
+Structure makeHelper2(const std::string& path, const int charge, const int multiplicity, const Model& model,
                       const Structure::LABEL label, const Object::CollectionPtr& coll) {
-  return Structure::create(fromXyz(xyz), charge, multiplicity, model, label, coll);
+  return Structure::create(ChemicalFileHandler::read(path).first, charge, multiplicity, model, label, coll);
 }
 
-ID createHelper1(Structure& structure, const std::string& xyz_file, const int charge, const int multiplicity) {
-  return structure.create(fromXyz(xyz_file), charge, multiplicity);
+ID createHelper1(Structure& structure, const std::string& path, const int charge, const int multiplicity) {
+  return structure.create(ChemicalFileHandler::read(path).first, charge, multiplicity);
 }
 
-ID createHelper2(Structure& structure, const std::string& xyz_file, const int charge, const int multiplicity,
+ID createHelper2(Structure& structure, const std::string& path, const int charge, const int multiplicity,
                  const Model& model, const Structure::LABEL label) {
-  return structure.create(fromXyz(xyz_file), charge, multiplicity, model, label);
+  return structure.create(ChemicalFileHandler::read(path).first, charge, multiplicity, model, label);
 }
 
-void setAtomsHelper(Structure& structure, const std::string& xyz_file) {
-  structure.setAtoms(fromXyz(xyz_file));
+void setAtomsHelper(Structure& structure, const std::string& path) {
+  structure.setAtoms(ChemicalFileHandler::read(path).first);
 }
 
 } // namespace
@@ -79,6 +71,18 @@ void init_structure_label(pybind11::module& m) {
   label.value("SURFACE_ADSORPTION_GUESS", Structure::LABEL::SURFACE_ADSORPTION_GUESS);
   label.value("COMPLEX_OPTIMIZED", Structure::LABEL::COMPLEX_OPTIMIZED);
   label.value("COMPLEX_GUESS", Structure::LABEL::COMPLEX_GUESS);
+  label.value("SURFACE_COMPLEX_OPTIMIZED", StructureLabel::SURFACE_COMPLEX_OPTIMIZED);
+  label.value("USER_SURFACE_OPTIMIZED", StructureLabel::USER_SURFACE_OPTIMIZED);
+  label.value("GEOMETRY_OPTIMIZATION_OBSERVER", Structure::LABEL::GEOMETRY_OPTIMIZATION_OBSERVER);
+  label.value("TS_OPTIMIZATION_OBSERVER", Structure::LABEL::TS_OPTIMIZATION_OBSERVER);
+  // Storing Intrinsic Reaction Coordinate (IRC) steps
+  label.value("IRC_FORWARD_OBSERVER", Structure::LABEL::IRC_FORWARD_OBSERVER);
+  label.value("IRC_BACKWARD_OBSERVER", Structure::LABEL::IRC_BACKWARD_OBSERVER);
+  label.value("IRC_OPT_FORWARD_OBSERVER", Structure::LABEL::IRC_OPT_FORWARD_OBSERVER);
+  label.value("IRC_OPT_BACKWARD_OBSERVER", Structure::LABEL::IRC_OPT_BACKWARD_OBSERVER);
+  label.value("SCAN_OBSERVER", Structure::LABEL::SCAN_OBSERVER);
+  label.value("USER_COMPLEX_OPTIMIZED", Structure::LABEL::USER_COMPLEX_OPTIMIZED);
+  label.value("USER_SURFACE_COMPLEX_OPTIMIZED", StructureLabel::USER_SURFACE_COMPLEX_OPTIMIZED);
 }
 
 void init_structure(pybind11::class_<Structure, Object>& structure) {
@@ -225,9 +229,9 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
           &Structure::create),
       pybind11::arg("atoms"), pybind11::arg("charge"), pybind11::arg("multiplicity"), pybind11::arg("model"),
       pybind11::arg("label"), pybind11::arg("collection"));
-  structure.def_static("make", &makeHelper1, pybind11::arg("xyz_file"), pybind11::arg("charge"),
+  structure.def_static("make", &makeHelper1, pybind11::arg("path"), pybind11::arg("charge"),
                        pybind11::arg("multiplicity"), pybind11::arg("collection"));
-  structure.def_static("make", &makeHelper2, pybind11::arg("xyz_file"), pybind11::arg("charge"), pybind11::arg("multiplicity"),
+  structure.def_static("make", &makeHelper2, pybind11::arg("path"), pybind11::arg("charge"), pybind11::arg("multiplicity"),
                        pybind11::arg("model"), pybind11::arg("label"), pybind11::arg("collection"));
 
   structure.def("create", pybind11::overload_cast<const AtomCollection&, int, int>(&Structure::create),
@@ -236,13 +240,13 @@ void init_structure(pybind11::class_<Structure, Object>& structure) {
                 pybind11::overload_cast<const AtomCollection&, int, int, const Model&, Structure::LABEL>(&Structure::create),
                 pybind11::arg("atoms"), pybind11::arg("charge"), pybind11::arg("multiplicity"), pybind11::arg("model"),
                 pybind11::arg("label"));
-  structure.def("create", &createHelper1, pybind11::arg("xyz_file"), pybind11::arg("charge"), pybind11::arg("multiplicity"));
-  structure.def("create", &createHelper2, pybind11::arg("xyz_file"), pybind11::arg("charge"),
-                pybind11::arg("multiplicity"), pybind11::arg("model"), pybind11::arg("label"));
+  structure.def("create", &createHelper1, pybind11::arg("path"), pybind11::arg("charge"), pybind11::arg("multiplicity"));
+  structure.def("create", &createHelper2, pybind11::arg("path"), pybind11::arg("charge"), pybind11::arg("multiplicity"),
+                pybind11::arg("model"), pybind11::arg("label"));
 
   structure.def("get_atoms", &Structure::getAtoms);
   structure.def("set_atoms", &Structure::setAtoms, pybind11::arg("atoms"));
-  structure.def("set_atoms", &setAtomsHelper, pybind11::arg("xyz_file"), "Populate the atoms from an .xyz file");
+  structure.def("set_atoms", &setAtomsHelper, pybind11::arg("path"), "Populate the atoms from a file supported by utils.io");
   structure.def("has_atoms", &Structure::hasAtoms);
   structure.def("clear_atoms", &Structure::clearAtoms);
 

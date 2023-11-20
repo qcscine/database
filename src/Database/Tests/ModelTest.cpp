@@ -1,7 +1,7 @@
 /**
  * @file
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 #include "Database/Objects/Model.h"
@@ -25,6 +25,10 @@ class ModelSettings : public Scine::Utils::Settings {
     DoubleDescriptor temperature("");
     temperature.setDefaultValue(298.15);
     this->_fields.push_back(SettingsNames::temperature, temperature);
+    // temperature
+    DoubleDescriptor pressure("");
+    pressure.setDefaultValue(1e+5);
+    this->_fields.push_back(SettingsNames::pressure, pressure);
     // electronicTemperature
     DoubleDescriptor electronicTemperature("");
     electronicTemperature.setDefaultValue(300.0);
@@ -89,6 +93,7 @@ TEST_F(ModelTest, CompleteModel) {
   ModelSettings settings;
   settings.modifyDouble(SettingsNames::temperature, 1.0);
   settings.modifyDouble(SettingsNames::electronicTemperature, 2.0);
+  settings.modifyDouble(SettingsNames::pressure, 1e+5);
   settings.modifyString(SettingsNames::method, "3");
   settings.modifyString(SettingsNames::methodFamily, "4");
   settings.modifyString(SettingsNames::spinMode, "5");
@@ -112,6 +117,7 @@ TEST_F(ModelTest, CompleteModel) {
   model.embedding = "any";
   model.periodicBoundaries = "any";
   model.externalField = "";
+  model.pressure = "1e+5";
 
   model.completeModel(settings);
 
@@ -128,6 +134,7 @@ TEST_F(ModelTest, CompleteModel) {
   EXPECT_EQ(model.embedding, "11");
   EXPECT_EQ(model.periodicBoundaries, "12");
   EXPECT_EQ(model.externalField, "");
+  EXPECT_EQ(model.pressure, "1e+5");
 
   // check if we throw because of collision
   model.embedding = "something";
@@ -180,7 +187,7 @@ TEST_F(ModelTest, EqualityWorks) {
   Model rhs("dft", "something", "", "none");
   ASSERT_TRUE(lhs == rhs);
   lhs.program = "sparrow";
-  rhs.program = "sparrow";
+  rhs.program = "Sparrow";
   ASSERT_TRUE(lhs == rhs);
   rhs.program = "something_different";
   ASSERT_FALSE(lhs == rhs);
@@ -190,6 +197,30 @@ TEST_F(ModelTest, EqualityWorks) {
   rhs.program = "none";
   ASSERT_FALSE(lhs == rhs);
   rhs.program = "";
+  ASSERT_FALSE(lhs == rhs);
+  rhs.program = "sparrow";
+  ASSERT_TRUE(lhs == rhs);
+  lhs.temperature = "373.15";
+  rhs.temperature = "any";
+  ASSERT_TRUE(lhs == rhs);
+  rhs.temperature = "373.150";
+  ASSERT_TRUE(lhs == rhs);
+  rhs.temperature = "none";
+  ASSERT_FALSE(lhs == rhs);
+  rhs.temperature = "Any";
+  ASSERT_TRUE(lhs == rhs);
+  lhs.periodicBoundaries = "any";
+  rhs.periodicBoundaries = "ANY";
+  ASSERT_TRUE(lhs == rhs);
+  rhs.periodicBoundaries = "none";
+  ASSERT_FALSE(lhs == rhs);
+  rhs.periodicBoundaries = "8.0,10.0,10.0,45.0,90.0,90.0,xyz";
+  ASSERT_TRUE(lhs == rhs);
+  lhs.periodicBoundaries = "8.0,10.0,10.0,45.0,90.0,90.0,xyz";
+  ASSERT_TRUE(lhs == rhs);
+  rhs.periodicBoundaries = "8.00,10.0,10.0,45.0,90.0,90.00,xyz";
+  ASSERT_TRUE(lhs == rhs);
+  rhs.periodicBoundaries = "8.00,10.1,10.0,45.0,90.0,90.00,xyz";
   ASSERT_FALSE(lhs == rhs);
 }
 
@@ -224,13 +255,13 @@ TEST_F(ModelTest, EntryNoneAndAnyChecksWork) {
 
 TEST_F(ModelTest, OutputStringWorks) {
   Model m("any", "any", "any", "any");
-  std::vector<std::string> names = {SettingsNames::temperature,  SettingsNames::electronicTemperature,
-                                    SettingsNames::method,       SettingsNames::methodFamily,
-                                    SettingsNames::spinMode,     SettingsNames::program,
-                                    SettingsNames::version,      SettingsNames::basisSet,
-                                    SettingsNames::solvation,    SettingsNames::solvent,
-                                    SettingsNames::embedding,    SettingsNames::periodicBoundaries,
-                                    SettingsNames::externalField};
+  std::vector<std::string> names = {SettingsNames::temperature,   SettingsNames::electronicTemperature,
+                                    SettingsNames::method,        SettingsNames::methodFamily,
+                                    SettingsNames::spinMode,      SettingsNames::program,
+                                    SettingsNames::version,       SettingsNames::basisSet,
+                                    SettingsNames::solvation,     SettingsNames::solvent,
+                                    SettingsNames::embedding,     SettingsNames::periodicBoundaries,
+                                    SettingsNames::externalField, SettingsNames::pressure};
   m.temperature = "0";
   m.electronicTemperature = "1";
   m.method = "2";

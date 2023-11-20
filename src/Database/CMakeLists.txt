@@ -143,6 +143,12 @@ if(SCINE_BUILD_PYTHON_BINDINGS)
     COMMENT "Copying dependent shared libraries into python package directory"
   )
 
+  # copy pure python files
+  add_custom_command(TARGET Database POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${DATABASE_PURE_PYTHON_FILES} ${CMAKE_CURRENT_BINARY_DIR}/scine_database
+    COMMENT "Copying pure Python files into Python package directory"
+  )
+
   # Copy the setup file and README.rst into the binary dir so you can install
   # using pip or make a distribution with the compiled binary
   configure_file(

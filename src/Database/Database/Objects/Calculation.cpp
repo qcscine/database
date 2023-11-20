@@ -1,7 +1,7 @@
 /**
  * @file Calculation.cpp
  * @copyright This code is licensed under the 3-clause BSD license.\n
- *            Copyright ETH Zurich, Laboratory of Physical Chemistry, Reiher Group.\n
+ *            Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.\n
  *            See LICENSE.txt for details.
  */
 
@@ -54,6 +54,7 @@ ID createImpl(const Model& model, const Calculation::Job& job, const std::vector
                         << "model" << model.toBson()
                         << "structures"  << str
                         << "auxiliaries" << open_document << close_document
+                        << "restart_information" << open_document << close_document
                         << "settings" << open_document << close_document
                         << "status" << "construction"
                         << "priority" << 10
@@ -593,6 +594,134 @@ std::map<std::string, ID> Calculation::getAuxiliaries() const {
     auxiliaries.emplace(ele.key().to_string(), ele.get_oid().value);
   }
   return auxiliaries;
+}
+
+/*======================*
+ *  Restart Information
+ *======================*/
+
+void Calculation::setRestartInformation(const std::string& key, const ID& id) const {
+  // Selection
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // Build update document
+  // clang-format off
+  auto update = document{} << "$set" << open_document
+                             << "restart_information."+key << id.bsoncxx()
+                             << close_document
+                           << "$currentDate" << open_document
+                             << "_lastmodified" << true
+                             << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+ID Calculation::getRestartInformation(const std::string& key) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  /* selection:
+   *   { _id : <ID> }
+   */
+  // clang-format off
+  auto selection = document{} << "_id" << this->id().bsoncxx()
+                              << finalize;
+  // clang-format on
+  mongocxx::options::find options{};
+  options.projection(document{} << "restart_information." + key << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
+  if (!optional)
+    throw Exceptions::MissingIdOrField();
+  auto view = optional.value().view();
+  return ID(view["restart_information"][key].get_oid().value);
+}
+
+bool Calculation::hasRestartInformation(const std::string& key) const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  const auto restart_information = this->getRestartInformation();
+  return restart_information.count(key) > 0;
+}
+
+void Calculation::removeRestartInformation(const std::string& key) const {
+  // Selection
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // Build update document
+  // clang-format off
+  auto update = document{} << "$unset" << open_document
+                             << "restart_information."+key << ""
+                             << close_document
+                           << "$currentDate" << open_document
+                             << "_lastmodified" << true
+                             << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+void Calculation::setRestartInformation(const std::map<std::string, ID>& restart_information) const {
+  // Selection
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // Build restart_information document
+  bsoncxx::builder::basic::document info;
+  for (auto const& ele : restart_information) {
+    info.append(bsoncxx::builder::basic::kvp(ele.first, ele.second.bsoncxx()));
+  }
+  // clang-format off
+  auto update = document{} << "$set" << open_document
+                             << "restart_information" << info
+                             << close_document
+                           << "$currentDate" << open_document
+                             << "_lastmodified" << true
+                             << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+void Calculation::clearRestartInformation() const {
+  // Selection
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // Build empty restart_information document
+  // clang-format off
+  auto update = document{} << "$set" << open_document
+                             << "restart_information" << open_document << close_document
+                             << close_document
+                           << "$currentDate" << open_document
+                             << "_lastmodified" << true
+                             << close_document
+                           << finalize;
+  // clang-format on
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+}
+
+std::map<std::string, ID> Calculation::getRestartInformation() const {
+  if (!_collection)
+    throw Exceptions::MissingLinkedCollectionException();
+  // Select and find
+  auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  mongocxx::options::find options{};
+  options.projection(document{} << "restart_information" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
+  // Check and prepare
+  if (!optional)
+    throw Exceptions::MissingIdOrField();
+  auto view = optional.value().view();
+
+  // Load restart information IDs
+  std::map<std::string, ID> restart_information;
+  auto restart_informationDoc = view["restart_information"].get_document().view();
+  for (bsoncxx::document::element ele : restart_informationDoc) {
+    restart_information.emplace(ele.key().to_string(), ele.get_oid().value);
+  }
+  return restart_information;
 }
 
 /*==============*
