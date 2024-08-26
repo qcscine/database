@@ -174,7 +174,9 @@ void ElementaryStep::addReactant(const ID& id, const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -187,7 +189,9 @@ void ElementaryStep::addReactant(const ID& id, const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -205,7 +209,9 @@ void ElementaryStep::removeReactant(const ID& id, const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -218,7 +224,9 @@ void ElementaryStep::removeReactant(const ID& id, const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -240,7 +248,9 @@ void ElementaryStep::setReactants(const std::vector<ID>& ids, const SIDE side) c
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -253,7 +263,9 @@ void ElementaryStep::setReactants(const std::vector<ID>& ids, const SIDE side) c
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -314,7 +326,9 @@ void ElementaryStep::clearReactants(const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -327,7 +341,9 @@ void ElementaryStep::clearReactants(const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -395,7 +411,9 @@ void ElementaryStep::setSpline(const Utils::BSplines::TrajectorySpline& spline) 
                            << finalize;
   // clang-format on
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void ElementaryStep::clearSpline() const {
@@ -444,7 +462,9 @@ void ElementaryStep::addIdxMaps(const std::vector<int>& lhsRhsMap, const boost::
                                 << close_document
                               << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   else {
     // clang-format off
@@ -456,7 +476,9 @@ void ElementaryStep::addIdxMaps(const std::vector<int>& lhsRhsMap, const boost::
                                 << close_document
                               << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -474,7 +496,9 @@ void ElementaryStep::removeIdxMaps() const {
                               << close_document
                             << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 bool ElementaryStep::hasIdxMap(const IdxMapType& mapType) const {
@@ -541,7 +565,9 @@ bool ElementaryStep::hasIdxMapByKey(const std::string& key) const {
                               << close_array
                               << finalize;
   // clang-format on
-  auto optional = _collection->mongocxx().find_one(selection.view());
+  mongocxx::options::find options{};
+  options.projection(document{} << "idx_maps" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
   return static_cast<bool>(optional);
 }
 
@@ -562,10 +588,10 @@ std::vector<int> ElementaryStep::getIdxMapByKey(const std::string& key) const {
   if (findIter == mapIt.end()) {
     throw Exceptions::MissingIdOrField();
   }
-  bsoncxx::array::view wantedMapArray = findIter->get_array();
+  const bsoncxx::array::view wantedMapArray = findIter->get_array();
   std::vector<int> wantedMap;
-  for (bsoncxx::array::element ele : wantedMapArray) {
-    wantedMap.emplace_back(ele.get_int32());
+  for (const bsoncxx::array::element ele : wantedMapArray) {
+    wantedMap.emplace_back(Fields::getIntegerFromElement<bsoncxx::array::element, int>(ele));
   }
   return wantedMap;
 }

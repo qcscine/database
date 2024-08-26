@@ -7,10 +7,10 @@
 
 #include "Database/Objects/ValueCollection.h"
 #include "Database/Exceptions.h"
+#include "Database/Objects/Impl/Fields.h"
 #include "Utils/UniversalSettings/GenericValueVariant.h"
 #include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/types/value.hpp>
-#include <map>
 #include <tuple>
 
 namespace Scine {
@@ -63,6 +63,15 @@ void array_append(bsoncxx::builder::basic::array& array, const std::string& v) {
 void array_append(bsoncxx::builder::basic::array& array, const Utils::UniversalSettings::ValueCollection& v) {
   array.append(ValueCollection::serialize(v));
 }
+void array_append(bsoncxx::builder::basic::array& array, const std::vector<int>& v) {
+  /*
+   * MongoDB does not support arrays of arrays. Therefore, we construct an array of value collections.
+   * These value collections then contain exactly one array which is the inner array.
+   */
+  Utils::UniversalSettings::ValueCollection newValueCollection;
+  newValueCollection.addIntList(subListKey, v);
+  array.append(ValueCollection::serialize(newValueCollection));
+}
 
 // Blanket impl for IntList, DoubleList, StringList and CollectionList
 template<typename T>
@@ -103,6 +112,13 @@ struct ListTypeHint<Utils::UniversalSettings::ValueCollection> {
   }
 };
 
+template<>
+struct ListTypeHint<std::vector<int>> {
+  static std::string value() {
+    return "list_of_lists";
+  }
+};
+
 template<typename T>
 void anon_serialize(bsoncxx::builder::basic::document& document, const std::string& key, const std::vector<T>& v) {
   bsoncxx::builder::basic::document builder{};
@@ -133,16 +149,16 @@ Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValue
   if (type == bsoncxx::type::k_bool) {
     return Utils::UniversalSettings::GenericValue::fromBool(value.get_bool());
   }
-  else if (type == bsoncxx::type::k_int32) {
-    return Utils::UniversalSettings::GenericValue::fromInt(value.get_int32());
+  if (type == bsoncxx::type::k_int32) {
+    return Utils::UniversalSettings::GenericValue::fromInt(Fields::getIntegerFromElement<BsonValueType, int>(value));
   }
-  else if (type == bsoncxx::type::k_double) {
+  if (type == bsoncxx::type::k_double) {
     return Utils::UniversalSettings::GenericValue::fromDouble(value.get_double());
   }
-  else if (type == bsoncxx::type::k_utf8) {
+  if (type == bsoncxx::type::k_utf8) {
     return Utils::UniversalSettings::GenericValue::fromString(value.get_utf8().value.to_string());
   }
-  else if (type == bsoncxx::type::k_document) {
+  if (type == bsoncxx::type::k_document) {
     /* Possible types:
      * - IntList, DoubleList, StringList, CollectionList (has type and list elements)
      * - ParametrizedOptionValue (has selectedOption member)
@@ -156,45 +172,50 @@ Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValue
       auto array = document.view()["list"].get_array();
       if (typeString == ListTypeHint<int>::value()) {
         std::vector<int> vs;
-        for (auto v : array.value) {
-          vs.push_back(v.get_int32());
+        for (const auto v : array.value) {
+          vs.push_back(Fields::getIntegerFromElement<bsoncxx::array::element, int>(v));
         }
         return Utils::UniversalSettings::GenericValue::fromIntList(std::move(vs));
       }
-      else if (typeString == ListTypeHint<double>::value()) {
+      if (typeString == ListTypeHint<double>::value()) {
         std::vector<double> vs;
-        for (auto v : array.value) {
+        for (const auto v : array.value) {
           vs.push_back(v.get_double());
         }
         return Utils::UniversalSettings::GenericValue::fromDoubleList(std::move(vs));
       }
-      else if (typeString == ListTypeHint<std::string>::value()) {
+      if (typeString == ListTypeHint<std::string>::value()) {
         std::vector<std::string> vs;
-        for (auto v : array.value) {
+        for (const auto v : array.value) {
           vs.push_back(v.get_utf8().value.to_string());
         }
         return Utils::UniversalSettings::GenericValue::fromStringList(std::move(vs));
       }
-      else if (typeString == ListTypeHint<Utils::UniversalSettings::ValueCollection>::value()) {
+      if (typeString == ListTypeHint<Utils::UniversalSettings::ValueCollection>::value()) {
         std::vector<Utils::UniversalSettings::ValueCollection> vs;
         for (auto v : array.value) {
           vs.push_back(ValueCollection::deserialize(v.get_document()));
         }
         return Utils::UniversalSettings::GenericValue::fromCollectionList(std::move(vs));
       }
-      else {
-        throw Exceptions::MissingIdOrField();
+      if (typeString == ListTypeHint<std::vector<int>>::value()) {
+        std::vector<std::vector<int>> listOfLists;
+        for (auto v : array.value) {
+          auto collection = ValueCollection::deserialize(v.get_document());
+          listOfLists.push_back(collection.getIntList(subListKey));
+        }
+        return Utils::UniversalSettings::GenericValue::fromIntListList(std::move(listOfLists));
       }
+
+      throw Exceptions::MissingIdOrField();
     }
-    else if (document.view().find("selectedOption") != document.view().end()) {
+    if (document.view().find("selectedOption") != document.view().end()) {
       Utils::UniversalSettings::ParametrizedOptionValue option{
           document.view()["selectedOption"].get_utf8().value.to_string(),
           ValueCollection::deserialize(document.view()["optionSettings"].get_document())};
       return Utils::UniversalSettings::GenericValue::fromOptionWithSettings(std::move(option));
     }
-    else {
-      return Utils::UniversalSettings::GenericValue::fromCollection(ValueCollection::deserialize(document));
-    }
+    return Utils::UniversalSettings::GenericValue::fromCollection(ValueCollection::deserialize(document));
   }
 
   throw Exceptions::MissingIdOrField();

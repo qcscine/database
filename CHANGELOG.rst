@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Release 1.4.0
+-------------
+
+Changes (DB schema changing)
+ - Remove `MODEL_TRANSFORMATION` elementary step type
+
+Additions (backwards compatible):
+ - Exact type of stored integers in the database is checked before retrieval in case fields have been manipulated with other MongoDB applications
+ - Projection options are added to almost all internal database queries to reduce the bandwidth requirements.
+ - Added support for list-of-lists of integers as elements in value collections (calculation settings etc.).
+
 Release 1.3.0
 -------------
 
@@ -13,8 +24,12 @@ Changes (DB schema changing):
 
 Additions (backwards compatible):
  - Python package now includes pure Python code for more complex query utilities. This code is added in the modules
- `queries`, `energy_query_functions`, `compound_and_flask_creation`, `concentration_query_functions`, and `insert_concentration`.
- All of them are top level modules (`import scine_database.energy_query_functions`)
+    - `queries`
+    - `energy_query_functions`
+    - `compound_and_flask_creation`
+    - `concentration_query_functions`
+    - `insert_concentration`.
+   All of them are top level modules (`import scine_database.energy_query_functions`)
  - Added the possibility to configure the connection based on a custom URI instead of credentials.
 
 Release 1.2.0

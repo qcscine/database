@@ -57,7 +57,7 @@ enum class StructureLabel : unsigned {
   SCAN_OBSERVER = 107,
 };
 
-enum class ElementaryStepType : unsigned { REGULAR = 0, BARRIERLESS = 1, MODEL_TRANSFORMATION = 2 };
+enum class ElementaryStepType : unsigned { REGULAR = 0, BARRIERLESS = 1 };
 
 namespace Layout {
 

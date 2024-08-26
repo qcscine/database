@@ -132,21 +132,36 @@ Utils::AtomCollection Structure::getAtoms() const {
     throw Exceptions::MissingIdOrField();
   auto view = optional.value().view();
   // Read number of atoms
-  auto nAtoms = view["nAtoms"].get_int32();
-  // Read atoms in AtomCollection
-  Utils::AtomCollection atoms;
-  atoms.resize(nAtoms);
+  auto nAtoms = Fields::getInteger<int>(view, "nAtoms");
   bsoncxx::array::view atomsView = view["atoms"].get_array();
-  for (int i = 0; i < nAtoms; i++) {
-    const auto atom = atomsView[i];
-    std::string symbol = atom["element"].get_utf8().value.to_string();
-    const auto e = Utils::ElementInfo::elementTypeForSymbol(symbol);
-    const double x = atom["x"].get_double();
-    const double y = atom["y"].get_double();
-    const double z = atom["z"].get_double();
-    atoms.setElement(i, e);
-    atoms.setPosition(i, Eigen::Vector3d(x, y, z));
+  // Read atoms in AtomCollection
+  std::vector<Utils::ElementType> elements;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> coordinates =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>::Zero(nAtoms, 3);
+  /*
+   * Note that the loop
+   * for(const auto& atom : atomsView) {
+   *   ...
+   * }
+   * is significantly faster than its index-based equivalent
+   * for (int i = 0; i < nAtoms; i++) {
+   *   const auto atom = atomsView[i];
+   *   ...
+   * }
+   * Therefore, we use a somewhat awkward counter for the atom index.
+   *
+   */
+  unsigned int iAtom = 0;
+  for (const auto& atom : atomsView) {
+    const std::string symbol = atom["element"].get_utf8().value.to_string();
+    elements.push_back(Utils::ElementInfo::elementTypeForSymbol(symbol));
+    coordinates(iAtom, 0) = atom["x"].get_double();
+    coordinates(iAtom, 1) = atom["y"].get_double();
+    coordinates(iAtom, 2) = atom["z"].get_double();
+    iAtom++;
   }
+
+  Utils::AtomCollection atoms(elements, coordinates);
   return atoms;
 }
 
@@ -178,7 +193,9 @@ void Structure::setAtoms(const Utils::AtomCollection& atoms) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto projection = document{} << "_id" << 1 << "_objecttype" << 1 << finalize;
+  auto options = mongocxx::options::find_one_and_update();
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 int Structure::hasAtoms() const {
@@ -193,9 +210,7 @@ int Structure::hasAtoms() const {
   if (!optional)
     throw Exceptions::MissingIdOrField();
   auto view = optional.value().view();
-  if (view["nAtoms"].type() != bsoncxx::types::b_int32::type_id)
-    throw Exceptions::MissingIdOrField();
-  return view["nAtoms"].get_int32();
+  return Fields::getInteger<int>(view, "nAtoms");
 }
 
 void Structure::clearAtoms() const {
@@ -212,7 +227,9 @@ void Structure::clearAtoms() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /*=========*
@@ -348,7 +365,9 @@ void Structure::addProperty(const std::string& key, const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::removeProperty(const std::string& key, const ID& id) const {
@@ -364,7 +383,9 @@ void Structure::removeProperty(const std::string& key, const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::setProperties(const std::string& key, const std::vector<ID>& ids) const {
@@ -384,7 +405,9 @@ void Structure::setProperties(const std::string& key, const std::vector<ID>& ids
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 std::vector<ID> Structure::getProperties(const std::string& key) const {
@@ -419,11 +442,13 @@ std::vector<ID> Structure::queryProperties(const std::string& key, const Model& 
     return {};
   const auto& ids = it->second;
 
+  mongocxx::options::find options{};
+  options.projection(document{} << "model" << 1 << finalize);
   // Setup selection for query in properties
   std::vector<ID> ret;
   for (const auto& id : ids) {
     auto selection = document{} << "_id" << id.bsoncxx() << finalize;
-    auto optional = collection->mongocxx().find_one(selection.view());
+    auto optional = collection->mongocxx().find_one(selection.view(), options);
     if (!optional)
       throw Exceptions::MissingIdOrField();
     auto doc = optional.value().view();
@@ -457,7 +482,9 @@ void Structure::clearProperties(const std::string& key) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 std::map<std::string, std::vector<ID>> Structure::getAllProperties() const {
@@ -504,7 +531,9 @@ void Structure::setAllProperties(const std::map<std::string, std::vector<ID>>& p
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::clearAllProperties() const {
@@ -520,7 +549,9 @@ void Structure::clearAllProperties() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /*================*
@@ -568,7 +599,9 @@ void Structure::addCalculation(const std::string& key, const ID& id) const {
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::addCalculations(const std::string& key, const std::vector<ID>& ids) const {
@@ -588,7 +621,9 @@ void Structure::addCalculations(const std::string& key, const std::vector<ID>& i
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::removeCalculation(const std::string& key, const ID& id) const {
@@ -604,7 +639,9 @@ void Structure::removeCalculation(const std::string& key, const ID& id) const {
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::setCalculations(const std::string& key, const std::vector<ID>& ids) const {
@@ -624,7 +661,9 @@ void Structure::setCalculations(const std::string& key, const std::vector<ID>& i
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 std::vector<ID> Structure::getCalculations(const std::string& key) const {
@@ -666,7 +705,9 @@ std::vector<ID> Structure::queryCalculations(const std::string& key, const Model
   }
 
   auto selection = document{} << "_id" << open_document << "$in" << array << close_document << finalize;
-  auto cursor = collection->mongocxx().find(selection.view());
+  mongocxx::options::find options{};
+  options.projection(document{} << "model" << 1 << finalize);
+  auto cursor = collection->mongocxx().find(selection.view(), options);
   std::vector<ID> ret;
   for (const auto& doc : cursor) {
     Model docModel(doc["model"].get_document().view());
@@ -699,7 +740,9 @@ void Structure::clearCalculations(const std::string& key) const {
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 std::map<std::string, std::vector<ID>> Structure::getAllCalculations() const {
@@ -746,7 +789,9 @@ void Structure::setAllCalculations(const std::map<std::string, std::vector<ID>>&
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::clearAllCalculations() const {
@@ -762,7 +807,9 @@ void Structure::clearAllCalculations() const {
                            << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /*===================*
@@ -800,7 +847,9 @@ void Structure::setGraph(const std::string& key, const std::string& graph) const
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Structure::removeGraph(const std::string& key) const {
@@ -816,7 +865,9 @@ void Structure::removeGraph(const std::string& key) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 bool Structure::hasGraph(const std::string& key) const {
@@ -869,7 +920,9 @@ void Structure::setGraphs(const std::map<std::string, std::string>& graphs) cons
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /*===========*
@@ -909,6 +962,9 @@ ID Structure::getOriginal() const {
   }
   if (!this->hasOriginal()) {
     throw Exceptions::MissingIdOrField();
+  }
+  if (*this->_id == Fields::get<ID>(*this, "duplicate_of")) {
+    throw Exceptions::SelfDuplicateException();
   }
   return Fields::get<ID>(*this, "duplicate_of");
 }

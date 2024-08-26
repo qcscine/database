@@ -14,6 +14,7 @@
 #include "Database/Objects/Object.h"
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/exception/exception.hpp>
+#include <iostream>
 #include <mongocxx/collection.hpp>
 #include <string>
 
@@ -229,7 +230,9 @@ void set(const Object& obj, const std::string& field, const T& value) {
                              << close_document
                            << finalize;
   // clang-format on
-  collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /**
@@ -281,7 +284,9 @@ inline void unset(const Object& obj, const std::string& field) {
                              << close_document
                            << finalize;
   // clang-format on
-  collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 //! Check whether a field exists
@@ -324,8 +329,41 @@ inline bool nonNull(const Object& obj, const std::string& field) {
                               << close_array
                               << finalize;
   // clang-format on
-  auto optional = collection->mongocxx().find_one(selection.view());
+  auto options = mongocxx::options::find();
+  options.projection(document{} << "_id" << 1 << finalize);
+  auto optional = collection->mongocxx().find_one(selection.view(), options);
   return static_cast<bool>(optional);
+}
+
+template<typename T, typename R>
+inline R getIntegerFromElement(T v) {
+  if (v.type() == bsoncxx::type::k_int64) {
+    return static_cast<R>(v.get_int64());
+  }
+  if (v.type() == bsoncxx::type::k_int32) {
+    return static_cast<R>(v.get_int32());
+  }
+  if (v.type() == bsoncxx::type::k_double) {
+    std::cerr << "Warning: The database contains a double value for an integer field." << std::endl;
+    return static_cast<R>(v.get_double());
+  }
+  throw std::runtime_error("The database contains a non-integer value for an integer field.");
+}
+
+template<typename R>
+inline R getInteger(bsoncxx::document::view& view, const std::string& key) {
+  return getIntegerFromElement<bsoncxx::document::element, R>(view[key]);
+}
+
+// define template of getInteger explicitly for int return type to include check for overflow
+template<>
+inline int getInteger<int>(bsoncxx::document::view& view, const std::string& key) {
+  const long x = getInteger<long>(view, key);
+  if (x > std::numeric_limits<int>::max() || x < std::numeric_limits<int>::min()) {
+    throw std::runtime_error("The database contains an 64bit integer that cannot be represented as 32bit integer "
+                             "as defined in our database schema.");
+  }
+  return getIntegerFromElement<bsoncxx::document::element, int>(view[key]);
 }
 
 } /* namespace Fields */

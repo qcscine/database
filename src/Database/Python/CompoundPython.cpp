@@ -25,10 +25,12 @@ void init_compound(pybind11::class_<Compound, Object>& compound) {
     )delim");
   compound.def(pybind11::init<const ID&, const Object::CollectionPtr&>(), pybind11::arg("id"), pybind11::arg("collection"));
 
-  compound.def_static("make", pybind11::overload_cast<const std::vector<ID>&, const Object::CollectionPtr&>(&Compound::create),
-                      pybind11::arg("structure_ids"), pybind11::arg("collection"));
+  compound.def_static(
+      "make", pybind11::overload_cast<const std::vector<ID>&, const Object::CollectionPtr&, bool>(&Compound::create),
+      pybind11::arg("structure_ids"), pybind11::arg("collection"), pybind11::arg("exploration_disabled") = false);
 
-  compound.def("create", pybind11::overload_cast<const std::vector<ID>&>(&Compound::create), pybind11::arg("structure_ids"),
+  compound.def("create", pybind11::overload_cast<const std::vector<ID>&, bool>(&Compound::create),
+               pybind11::arg("structure_ids"), pybind11::arg("exploration_disabled") = false,
                R"delim(
       Generates a new compound in the linked collection from a list of
       structure IDs.

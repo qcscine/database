@@ -26,6 +26,17 @@ class DuplicateIDException : public std::exception {
 };
 
 /**
+ * @class SelfDuplicateException
+ * @brief An exception to throw if a given structure is a duplicate of itself.
+ */
+class SelfDuplicateException : public std::exception {
+ public:
+  const char* what() const throw() {
+    return "The given structure is a duplicate of itself. This cannot be.";
+  }
+};
+
+/**
  * @class MissingCredentialsException
  * @brief An exception to throw if no credentials are present to establish a connection to a database.
  */

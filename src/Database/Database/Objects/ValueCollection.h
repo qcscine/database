@@ -13,6 +13,7 @@
 #include "boost/optional.hpp"
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/types.hpp>
+#include <string>
 
 namespace Scine {
 namespace Database {
@@ -29,6 +30,7 @@ struct GenericValue {
                         const Utils::UniversalSettings::GenericValue& value);
   static Utils::UniversalSettings::GenericValue deserialize(const BsonValueType& value);
 };
+const static std::string subListKey = "sub_list";
 
 struct ValueCollection {
   static bsoncxx::v_noabi::document::value serialize(const Utils::UniversalSettings::ValueCollection& collection);

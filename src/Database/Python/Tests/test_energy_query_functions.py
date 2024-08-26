@@ -10,7 +10,9 @@ import unittest
 import scine_database as db
 import test_database_setup as db_setup
 from scine_database.energy_query_functions import (
-    get_min_free_energy_for_aggregate
+    get_min_free_energy_for_aggregate,
+    barrier_from_rate_constant,
+    rate_constant_from_barrier
 )
 
 
@@ -77,3 +79,10 @@ class EnergyQueryFunctionsTest(unittest.TestCase):
                    - (energies[len(energies) - 2] + gibbs_correction_2[len(gibbs_correction_2) - 2])) < 1e-12
 
         manager.wipe()
+
+    def test_barrier_to_rate_transformation(self):
+        temperature = 298.15
+        barrier = 42.0  # in kJ / mol
+
+        rate = rate_constant_from_barrier(barrier, temperature)
+        assert abs(barrier_from_rate_constant(rate, temperature) / 1000 - barrier) < 1e-12

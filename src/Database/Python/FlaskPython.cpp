@@ -26,18 +26,19 @@ void init_flask(pybind11::class_<Flask, Object>& flask) {
     )delim");
   flask.def(pybind11::init<const ID&, const Object::CollectionPtr&>(), pybind11::arg("id"), pybind11::arg("collection"));
 
-  flask.def_static(
-      "make",
-      pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&, const Object::CollectionPtr&>(&Flask::create),
-      pybind11::arg("structure_ids"), pybind11::arg("compound_ids"), pybind11::arg("collection"),
-      R"delim(
+  flask.def_static("make",
+                   pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&, const Object::CollectionPtr&, bool>(
+                       &Flask::create),
+                   pybind11::arg("structure_ids"), pybind11::arg("compound_ids"), pybind11::arg("collection"),
+                   pybind11::arg("exploration_disabled") = false,
+                   R"delim(
       Create a new flask with a database ID.
 
       :returns: A Flask object linked to the given collection.
     )delim");
 
-  flask.def("create", pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&>(&Flask::create),
-            pybind11::arg("structure_ids"), pybind11::arg("compound_ids"),
+  flask.def("create", pybind11::overload_cast<const std::vector<ID>&, const std::vector<ID>&, bool>(&Flask::create),
+            pybind11::arg("structure_ids"), pybind11::arg("compound_ids"), pybind11::arg("exploration_disabled") = false,
             R"delim(
       Generates a new flask in the linked collection from a list of
       structure IDs and compoud IDs. Stores the generated ID in the

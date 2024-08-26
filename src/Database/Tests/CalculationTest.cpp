@@ -314,13 +314,25 @@ TEST_F(CalculationTest, Settings) {
   auto settings = calc.getSettings();
   ASSERT_EQ(settings.size(), 0);
 
+  const std::vector<std::vector<int>> listOfLists = {{0, 1, 2}, {3, 4, 5}, {-1, -2, 9}};
   calc.setSetting("foo", Utils::UniversalSettings::GenericValue::fromString("bar"));
   calc.setSetting("spam", Utils::UniversalSettings::GenericValue::fromInt(4));
+  calc.setSetting("spam_with_eggs", Utils::UniversalSettings::GenericValue::fromIntListList(listOfLists));
   auto settings_db = calc.getSettings();
   ASSERT_EQ(settings_db.getString("foo"), "bar");
   ASSERT_EQ(settings_db.getInt("spam"), 4);
   ASSERT_EQ(calc.getSetting("foo").toString(), "bar");
   ASSERT_EQ(calc.getSetting("spam").toInt(), 4);
+  const std::vector<std::vector<int>> listOfListsFromSettings = calc.getSetting("spam_with_eggs").toIntListList();
+  ASSERT_EQ(listOfListsFromSettings.size(), listOfLists.size());
+  for (unsigned int i = 0; i < listOfListsFromSettings.size(); ++i) {
+    const std::vector<int> sublist = listOfListsFromSettings[i];
+    const std::vector<int> sublistRef = listOfLists[i];
+    ASSERT_EQ(sublist.size(), sublistRef.size());
+    for (unsigned int j = 0; j < sublist.size(); ++j) {
+      ASSERT_EQ(sublist[j], sublistRef[j]);
+    }
+  }
 
   calc.removeSetting("foo");
   settings_db = calc.getSettings();

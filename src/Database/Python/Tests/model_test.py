@@ -9,6 +9,7 @@ import scine_database as db
 import unittest
 import os
 import pickle
+from copy import deepcopy
 
 
 class ModelTest(unittest.TestCase):
@@ -118,11 +119,14 @@ class ModelTest(unittest.TestCase):
         lhs = db.Model("dft", "any", "none", "none")
         rhs = db.Model("dft", "something", "", "none")
         assert lhs == rhs
+        assert lhs.equal_without_periodic_boundary_check(rhs)
         lhs.program = "sparrow"
         rhs.program = "sparrow"
         assert lhs == rhs
+        assert lhs.equal_without_periodic_boundary_check(rhs)
         rhs.program = "something_different"
         assert lhs != rhs
+        assert not lhs.equal_without_periodic_boundary_check(rhs)
         lhs.program = "any"
         rhs.program = "something"
         assert lhs == rhs
@@ -130,6 +134,11 @@ class ModelTest(unittest.TestCase):
         assert lhs != rhs
         rhs.program = ""
         assert lhs != rhs
+        another = deepcopy(rhs)
+        assert another.equal_without_periodic_boundary_check(rhs)
+        another.periodic_boundaries = "5.0,5.0,5.0,90.0,90.0,90.0,xyz"
+        assert another != rhs
+        assert another.equal_without_periodic_boundary_check(rhs)
 
     def test_model_output_string(self):
         m = db.Model("any", "any", "any", "any")

@@ -45,13 +45,11 @@ const std::map<CalculationStatus, std::string> EnumMaps::status2str = {
 // clang-format off
 const std::map<std::string, ElementaryStepType> EnumMaps::str2estype = {
   {"regular", ElementaryStepType::REGULAR},
-  {"barrierless", ElementaryStepType::BARRIERLESS},
-  {"model_transformation", ElementaryStepType::MODEL_TRANSFORMATION}
+  {"barrierless", ElementaryStepType::BARRIERLESS}
 };
 const std::map<ElementaryStepType, std::string> EnumMaps::estype2str = {
   {ElementaryStepType::REGULAR, "regular"},
-  {ElementaryStepType::BARRIERLESS, "barrierless"},
-  {ElementaryStepType::MODEL_TRANSFORMATION, "model_transformation"}
+  {ElementaryStepType::BARRIERLESS, "barrierless"}
 };
 // clang-format on
 

@@ -87,6 +87,7 @@ bsoncxx::document::value Object::getRawContent() const {
   if (!_collection)
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
+  // do not add projection here, because we want the whole document
   auto optional = _collection->mongocxx().find_one(selection.view());
   if (!optional)
     throw Exceptions::IDNotFoundException();
@@ -125,7 +126,9 @@ void Object::wipe(bool expectPresence) {
     throw Exceptions::MissingLinkedCollectionException();
   auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
   if (expectPresence) {
-    auto optional = _collection->mongocxx().find_one(selection.view());
+    auto options = mongocxx::options::find();
+    options.projection(document{} << "_id" << 1 << finalize);
+    auto optional = _collection->mongocxx().find_one(selection.view(), options);
     if (!optional)
       throw Exceptions::IDNotFoundException();
   }
@@ -187,7 +190,9 @@ void Object::touch() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Object::enable_analysis() {
@@ -203,7 +208,9 @@ void Object::enable_analysis() {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Object::enable_exploration() {
@@ -219,7 +226,9 @@ void Object::enable_exploration() {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Object::disable_analysis() {
@@ -235,7 +244,9 @@ void Object::disable_analysis() {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Object::disable_exploration() {
@@ -251,7 +262,9 @@ void Object::disable_exploration() {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 bool Object::analyze() {

@@ -183,10 +183,6 @@ class ElementaryStepTest(unittest.TestCase):
         step.set_type(db.ElementaryStepType.BARRIERLESS)
         assert db.ElementaryStepType.BARRIERLESS == step.get_type()
         assert db.ElementaryStepType.REGULAR != step.get_type()
-        step.set_type(db.ElementaryStepType.MODEL_TRANSFORMATION)
-        assert db.ElementaryStepType.MODEL_TRANSFORMATION == step.get_type()
-        assert db.ElementaryStepType.BARRIERLESS != step.get_type()
-        assert db.ElementaryStepType.REGULAR != step.get_type()
 
     def test_type_fails_collection(self):
         step = db.ElementaryStep(db.ID())

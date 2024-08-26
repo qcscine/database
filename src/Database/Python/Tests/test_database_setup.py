@@ -34,6 +34,18 @@ def _water() -> utils.AtomCollection:
     return utils.AtomCollection(elements, positions)
 
 
+def _water_cbor() -> str:
+    return "pGFhg6VhYQBhYwBhb4GCAAFhcqRhbIKBAYECY2xua4GiYXCCAAFjc2Vxgw" + \
+           "ABAmJscoKBAIEBYXOCgQGBAmFzAaVhYQBhYwFhb4GCAAFhcqRhbIKBAIEC" + \
+           "Y2xua4GiYXCCAAFjc2VxgwEAAmJscoKBAIEBYXOCgQCBAmFzAaVhYQBhYw" + \
+           "Jhb4GCAAFhcqRhbIKBAIEBY2xua4GiYXCCAAFjc2VxgwIAAWJscoGCAAFh" + \
+           "c4GCAAFhcwFhYw9hZ6JhRYODAAEAgwACAIMBAgBhWoMBAQhhdoMCAAA="
+
+
+def _water_split_cbor() -> str:
+    return "o2FjD2FnomFFgYMAAQBhWoIBCGF2gwIAAA==;o2FjD2FnomFFgGFagQFhdoMCAAA="
+
+
 def get_test_db_credentials(name: str = "chemoton_unittests") -> db.Credentials:
     """
     Generate a set of credentials pointing to a database and server.
@@ -261,6 +273,7 @@ def _insert_flask(
     complex = db.Structure()
     complex.link(structures)
     complex.create(_water(), 0, 1)
+    complex.set_graph("masm_cbor_graph", _water_split_cbor())
     complex.set_label(db.Label.COMPLEX_OPTIMIZED)
     complex.set_aggregate(flask.get_id())
     complex.set_model(db.Model("FAKE", "FAKE", "F-AKE"))
@@ -355,6 +368,7 @@ def _fake_structure(
         structure.set_label(db.Label.USER_OPTIMIZED)
     else:
         structure.set_label(db.Label.MINIMUM_OPTIMIZED)
+    structure.set_graph("masm_cbor_graph", _water_cbor())
     structure.set_aggregate(compound.get_id())
     structure.set_model(model)
     add_random_energy(structure, energy_limits, properties, model)
@@ -579,8 +593,10 @@ def insert_single_empty_structure_aggregate(manager: db.Manager, label: db.Label
     aggregate.link(aggregates)
     if build_flask:
         aggregate.create([structure.get_id()], [])  # type: ignore
+        structure.set_graph("masm_cbor_graph", _water_split_cbor())
     else:
         aggregate.create([structure.get_id()])  # type: ignore
+        structure.set_graph("masm_cbor_graph", _water_cbor())
     aggregate.disable_exploration()
     structure.set_aggregate(aggregate.get_id())
     structure.set_label(label)
@@ -613,6 +629,7 @@ def insert_single_empty_structure_flask(manager: db.Manager, label: db.Label) ->
     flask.create([structure.get_id()], [])
     flask.disable_exploration()
     structure.set_aggregate(flask.get_id())
+    structure.set_graph("masm_cbor_graph", _water_split_cbor())
     structure.set_label(label)
     structure.set_model(db.Model("FAKE", "FAKE", "F-AKE"))
 

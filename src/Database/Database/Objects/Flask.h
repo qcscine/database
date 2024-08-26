@@ -51,19 +51,22 @@ class Flask : public Object {
    * @param collection The collection to generate the Flask in
    * @param structures The initial list of Structures in the Flask.
    * @param compounds  The list of Compounds that are combined in the Flask.
+   * @param explorationDisabled Disable this Flask for further explorations.
    *
    * @throws MissingLinkedCollectionException If @p collection does not hold a collection
    * @returns The new Flask instance.
    */
-  static Flask create(const std::vector<ID>& structures, const std::vector<ID>& compounds, const CollectionPtr& collection);
+  static Flask create(const std::vector<ID>& structures, const std::vector<ID>& compounds,
+                      const CollectionPtr& collection, bool explorationDisabled = false);
   /**
    * @brief Creates a new Flask in the remote database.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @param structures The initial list of Structures in the Flask.
    * @param compounds  The list of Compounds that are combined in the Flask.
+   * @param explorationDisabled Disable this Flask for further explorations.
    * @return ID        The ID of the newly inserted Flask.
    */
-  ID create(const std::vector<ID>& structures, const std::vector<ID>& compounds);
+  ID create(const std::vector<ID>& structures, const std::vector<ID>& compounds, bool explorationDisabled = false);
   /**
    * @brief Get the centroid structure.
    *

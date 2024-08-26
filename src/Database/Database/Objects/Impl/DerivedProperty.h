@@ -13,6 +13,7 @@
 #include "Database/Id.h"
 #include "Database/Objects/Model.h"
 #include "Database/Objects/Property.h"
+#include "Fields.h"
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <boost/optional.hpp>
@@ -26,23 +27,6 @@
 
 namespace Scine {
 namespace Database {
-
-namespace {
-
-template<typename T>
-long getIntegerFromElement(T v) {
-  try {
-    return v.get_int64();
-  }
-  catch (const bsoncxx::exception&) {
-    return static_cast<long>(v.get_int32());
-  }
-}
-
-long getInteger(bsoncxx::document::view& view, const std::string& key) {
-  return getIntegerFromElement<bsoncxx::document::element>(view[key]);
-}
-} // namespace
 
 namespace Serialization {
 
@@ -146,7 +130,7 @@ struct Serializer<Eigen::VectorXd> {
   }
 
   static Eigen::VectorXd deserialize(bsoncxx::document::view view) {
-    const Eigen::Index size = getInteger(view, "size");
+    const Eigen::Index size = Fields::getInteger<long>(view, "size");
     Eigen::VectorXd ret(size);
     bsoncxx::array::view data = view["data"].get_array();
     Eigen::Index idx = 0;
@@ -181,8 +165,8 @@ struct Serializer<Eigen::MatrixXd> {
   }
 
   static Eigen::MatrixXd deserialize(bsoncxx::document::view view) {
-    const Eigen::Index cols = getInteger(view, "cols");
-    const Eigen::Index rows = getInteger(view, "rows");
+    const Eigen::Index cols = Fields::getInteger<long>(view, "cols");
+    const Eigen::Index rows = Fields::getInteger<long>(view, "rows");
     Eigen::MatrixXd ret(rows, cols);
     bsoncxx::array::view data = view["data"].get_array();
     Eigen::Index idx = 0;
@@ -230,9 +214,9 @@ struct Serializer<Eigen::SparseMatrix<double>> {
   }
 
   static Eigen::SparseMatrix<double> deserialize(bsoncxx::document::view view) {
-    const Eigen::Index cols = getInteger(view, "cols");
-    const Eigen::Index rows = getInteger(view, "rows");
-    const Eigen::Index size = getInteger(view, "size");
+    const Eigen::Index cols = Fields::getInteger<long>(view, "cols");
+    const Eigen::Index rows = Fields::getInteger<long>(view, "rows");
+    const Eigen::Index size = Fields::getInteger<long>(view, "size");
 
     // Read triplets
     std::vector<Eigen::Triplet<double>> triplets;
@@ -248,8 +232,8 @@ struct Serializer<Eigen::SparseMatrix<double>> {
       auto v = *values_it++;
       auto c = *col_it++;
       auto r = *row_it++;
-      triplets.emplace_back(getIntegerFromElement<bsoncxx::array::element>(r),
-                            getIntegerFromElement<bsoncxx::array::element>(c), v.get_double());
+      triplets.emplace_back(Fields::getIntegerFromElement<bsoncxx::array::element, long>(r),
+                            Fields::getIntegerFromElement<bsoncxx::array::element, long>(c), v.get_double());
     }
 
     Eigen::SparseMatrix<double> ret(rows, cols);
@@ -271,7 +255,7 @@ DerivedType create(std::shared_ptr<Collection> collection, const Model& model, c
     throw Exceptions::MissingCollectionException();
   }
 
-  document builder{};
+  bsoncxx::builder::basic::document builder{};
   const bsoncxx::types::b_date now{std::chrono::system_clock::now()};
   builder.append(kvp("_created", now));
   builder.append(kvp("_lastmodified", now));
@@ -292,8 +276,8 @@ DerivedType create(std::shared_ptr<Collection> collection, const Model& model, c
 
   auto doc = builder.extract();
   auto result = collection->mongocxx().insert_one(doc.view());
-  ID id{result->inserted_id().get_oid().value};
-  return DerivedType{std::move(id), collection};
+  const bsoncxx::v_noabi::oid oid = result->inserted_id().get_oid().value;
+  return DerivedType{ID(oid), collection};
 }
 
 template<typename DerivedProperty, typename T>
@@ -304,9 +288,9 @@ void updateData(DerivedProperty& derived, const T& data) {
     throw Exceptions::MissingLinkedCollectionException();
   }
   using namespace bsoncxx::builder::basic;
-  document selection{};
+  bsoncxx::builder::basic::document selection{};
   selection.append(kvp("_id", derived.id().bsoncxx()));
-  document update{};
+  bsoncxx::builder::basic::document update{};
   update.append(kvp("$set", [&data](sub_document updates) { Serialization::Serializer<T>::serialize(updates, data); }));
   update.append(kvp("$currentDate", [](sub_document dates) { dates.append(kvp("_lastmodified", true)); }));
   collection->mongocxx().find_one_and_update(selection.view(), update.view());
@@ -322,7 +306,7 @@ T getData(DerivedProperty& derived) {
   }
 
   using namespace bsoncxx::builder::basic;
-  document selection{};
+  bsoncxx::builder::basic::document selection{};
   selection.append(kvp("_id", derived.id().bsoncxx()));
   mongocxx::options::find options{};
   Serialization::Serializer<T>::project(options);

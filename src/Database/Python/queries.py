@@ -269,15 +269,17 @@ def calculation_exists_in_structure(job_order: str, structure_id_list: List[db.I
 def calculation_exists_in_id_set(id_selection: Set[str], n_structures: int, calculations: db.Collection,
                                  specific_structures: Optional[List[db.ID]] = None,
                                  settings: Optional[Union[utils.ValueCollection, Dict[str, Any]]] = None,
-                                 auxiliaries: Optional[Dict[str, Any]] = None) -> bool:
+                                 auxiliaries: Optional[Dict[str, Any]] = None,
+                                 job_order: Optional[str] = None) -> bool:
     return query_calculation_in_id_set(id_selection, n_structures, calculations, specific_structures,
-                                       settings, auxiliaries) is not None
+                                       settings, auxiliaries, job_order) is not None
 
 
 def query_calculation_in_id_set(id_selection: Set[str], n_structures: int, calculations: db.Collection,
                                 specific_structures: Optional[List[db.ID]] = None,
                                 settings: Optional[Union[utils.ValueCollection, Dict[str, Any]]] = None,
-                                auxiliaries: Optional[Dict[str, Any]] = None) -> Union[db.ID, None]:
+                                auxiliaries: Optional[Dict[str, Any]] = None,
+                                job_order: Optional[str] = None) -> Union[db.ID, None]:
     """
     Check if a calculation exists that corresponds to the given structures, mode, settings, etc.
 
@@ -300,6 +302,8 @@ def query_calculation_in_id_set(id_selection: Set[str], n_structures: int, calcu
         The settings of the calculation.
     auxiliaries : Optional[Dict[str, Any]]
         The auxiliaries of the calculation.
+    job_order : Optional[str]
+        The job order of the calculation.
 
     Returns
     -------
@@ -340,6 +344,9 @@ def query_calculation_in_id_set(id_selection: Set[str], n_structures: int, calcu
         if auxiliaries is not None:
             if auxiliaries != calculation.get_auxiliaries():
                 continue
+        if job_order is not None:
+            if job_order != calculation.get_job().order:
+                continue
         return calculation.id()
     return None
 
@@ -377,7 +384,7 @@ def get_calculation_id_from_structure(job_order: str, structure_id_list: List[db
     if not calc_id_set:
         return None
     return query_calculation_in_id_set(calc_id_set, len(structure_id_list), calculations, structure_id_list,
-                                       settings, auxiliaries)
+                                       settings, auxiliaries, job_order)
 
 
 def get_calculation_id(job_order: str, structure_id_list: List[db.ID], model: db.Model,

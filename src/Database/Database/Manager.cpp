@@ -13,6 +13,7 @@
 #include "Database/Objects/Calculation.h"
 #include "Database/Objects/Compound.h"
 #include "Database/Objects/ElementaryStep.h"
+#include "Database/Objects/Impl/Fields.h"
 #include "Database/Objects/Property.h"
 #include "Database/Objects/Reaction.h"
 #include "Database/Objects/Structure.h"
@@ -20,7 +21,6 @@
 /* External Includes */
 #include <bsoncxx/builder/stream/document.hpp>
 #include <cassert>
-#include <iostream>
 #include <mongocxx/client.hpp>
 #include <mongocxx/collection.hpp>
 #include <mongocxx/database.hpp>
@@ -200,9 +200,10 @@ std::tuple<int, int, int> Manager::getDBVersion() {
   if (!optional)
     return {0, 0, 0};
   auto view = optional.value().view();
-  int major = view["version"]["major"].get_int32();
-  int minor = view["version"]["minor"].get_int32();
-  int patch = view["version"]["patch"].get_int32();
+  auto versionView = view["version"];
+  const int major = Fields::getIntegerFromElement<bsoncxx::document::element, int>(versionView["major"]);
+  const int minor = Fields::getIntegerFromElement<bsoncxx::document::element, int>(versionView["minor"]);
+  const int patch = Fields::getIntegerFromElement<bsoncxx::document::element, int>(versionView["patch"]);
   return {major, minor, patch};
 }
 void Manager::init(bool moreIndices) {

@@ -171,10 +171,6 @@ TEST_F(ElementaryStepTest, Type) {
   step.setType(ElementaryStepType::BARRIERLESS);
   ASSERT_EQ(ElementaryStepType::BARRIERLESS, step.getType());
   ASSERT_NE(ElementaryStepType::REGULAR, step.getType());
-  step.setType(ElementaryStepType::MODEL_TRANSFORMATION);
-  ASSERT_EQ(ElementaryStepType::MODEL_TRANSFORMATION, step.getType());
-  ASSERT_NE(ElementaryStepType::REGULAR, step.getType());
-  ASSERT_NE(ElementaryStepType::BARRIERLESS, step.getType());
 }
 
 TEST_F(ElementaryStepTest, TypeFails1) {

@@ -113,6 +113,7 @@ class Model {
    */
   bool operator==(const Model& rhs) const;
   bool operator!=(const Model& rhs) const;
+  bool equalWithoutPeriodicBoundaryCheck(const Model& rhs) const;
 
   /**
    * @brief If the given entry is interpreted as None, i.e., and empty string or case insensitive 'none'
@@ -135,6 +136,8 @@ class Model {
 
  private:
   static const std::vector<std::string>& skipFields();
+
+  bool equality(const Model& rhs, bool comparePbc) const;
 
   std::map<std::string, std::reference_wrapper<std::string>> getSettingsModelPairs() {
     // reference wrapper instead of unique ptr because of std::pair

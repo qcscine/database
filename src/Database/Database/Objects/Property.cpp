@@ -81,7 +81,9 @@ void Property::setPropertyName(const std::string& name) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 Model Property::getModel() const {

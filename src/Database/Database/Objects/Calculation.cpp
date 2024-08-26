@@ -144,7 +144,7 @@ Calculation::Job Calculation::getJob() const {
   Calculation::Job job("dummy");
   job.order = jobDoc["order"].get_utf8().value.to_string();
   job.memory = jobDoc["memory"].get_double();
-  job.cores = jobDoc["cores"].get_int32();
+  job.cores = Fields::getInteger<int>(jobDoc, "cores");
   job.disk = jobDoc["disk"].get_double();
   return job;
 }
@@ -167,7 +167,9 @@ void Calculation::setJob(const Calculation::Job& job) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /*=========*
@@ -201,7 +203,9 @@ void Calculation::addStructure(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::removeStructure(const ID& id) const {
@@ -219,7 +223,9 @@ void Calculation::removeStructure(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 bool Calculation::hasStructure(const ID& id) const {
@@ -275,7 +281,9 @@ void Calculation::setSetting(const std::string& key, const Utils::UniversalSetti
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 Utils::UniversalSettings::GenericValue Calculation::getSetting(const std::string& key) const {
@@ -319,7 +327,9 @@ void Calculation::removeSetting(const std::string& key) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::clearSettings() const {
@@ -337,7 +347,9 @@ void Calculation::clearSettings() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 Utils::UniversalSettings::ValueCollection Calculation::getSettings() const {
@@ -372,7 +384,9 @@ void Calculation::setSettings(const Utils::UniversalSettings::ValueCollection& s
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 /*===========*
@@ -410,7 +424,9 @@ void Calculation::setResults(Calculation::Results& results) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::clearResults() const {
@@ -435,7 +451,9 @@ void Calculation::clearResults() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 Calculation::Results Calculation::getResults() const {
@@ -487,7 +505,9 @@ void Calculation::setAuxiliary(std::string key, const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 ID Calculation::getAuxiliary(std::string key) const {
@@ -531,7 +551,9 @@ void Calculation::removeAuxiliary(std::string key) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::setAuxiliaries(std::map<std::string, ID> auxiliaries) const {
@@ -553,7 +575,9 @@ void Calculation::setAuxiliaries(std::map<std::string, ID> auxiliaries) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::clearAuxiliaries() const {
@@ -571,7 +595,9 @@ void Calculation::clearAuxiliaries() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 std::map<std::string, ID> Calculation::getAuxiliaries() const {
@@ -615,7 +641,9 @@ void Calculation::setRestartInformation(const std::string& key, const ID& id) co
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 ID Calculation::getRestartInformation(const std::string& key) const {
@@ -659,7 +687,9 @@ void Calculation::removeRestartInformation(const std::string& key) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::setRestartInformation(const std::map<std::string, ID>& restart_information) const {
@@ -681,7 +711,9 @@ void Calculation::setRestartInformation(const std::map<std::string, ID>& restart
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Calculation::clearRestartInformation() const {
@@ -699,7 +731,9 @@ void Calculation::clearRestartInformation() const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 std::map<std::string, ID> Calculation::getRestartInformation() const {

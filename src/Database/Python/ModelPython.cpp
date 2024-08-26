@@ -121,6 +121,8 @@ void init_model(pybind11::module& m) {
   model.def("__copy__", [](const Model& self) -> Model { return Model(self); });
   model.def("__deepcopy__", [](const Model& self, pybind11::dict /* memo */) -> Model { return Model(self); });
   // Comparison operators
+  model.def("equal_without_periodic_boundary_check", &Model::equalWithoutPeriodicBoundaryCheck, pybind11::arg("rhs"),
+            "Compares to another model without checking for equal periodic boundaries");
   model.def(pybind11::self == pybind11::self);
   model.def(pybind11::self != pybind11::self);
   model.def(pybind11::pickle(

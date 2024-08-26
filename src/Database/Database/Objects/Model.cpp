@@ -197,6 +197,14 @@ const std::vector<std::string>& Model::skipFields() {
 }
 
 bool Model::operator==(const Model& rhs) const {
+  return equality(rhs, true);
+}
+
+bool Model::equalWithoutPeriodicBoundaryCheck(const Model& rhs) const {
+  return equality(rhs, false);
+}
+
+bool Model::equality(const Model& rhs, bool comparePbc) const {
   auto lhsPairs = this->getConstSettingsModelPairs(); // necessary to call here because of pybind
   auto rhsPairs = rhs.getConstSettingsModelPairs();
   auto rhsIterator = rhsPairs.begin();
@@ -234,6 +242,10 @@ bool Model::operator==(const Model& rhs) const {
       }
       // make sure we don't have equivalent periodic boundaries
       else if (name == Utils::SettingsNames::periodicBoundaries) {
+        if (!comparePbc) {
+          rhsIterator++;
+          continue;
+        }
         try {
           auto lhsPbc = Utils::PeriodicBoundaries(lhsModelEntryRef.get());
           auto rhsPbc = Utils::PeriodicBoundaries(rhsModelEntryRef.get());

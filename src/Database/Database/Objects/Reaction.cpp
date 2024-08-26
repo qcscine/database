@@ -129,7 +129,9 @@ void Reaction::addElementaryStep(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Reaction::removeElementaryStep(const ID& id) const {
@@ -145,7 +147,9 @@ void Reaction::removeElementaryStep(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 int Reaction::hasElementarySteps() const {
@@ -223,7 +227,9 @@ void Reaction::addReactant(const ID& id, const SIDE side, COMPOUND_OR_FLASK type
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -239,7 +245,9 @@ void Reaction::addReactant(const ID& id, const SIDE side, COMPOUND_OR_FLASK type
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -257,7 +265,9 @@ void Reaction::removeReactant(const ID& id, const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -270,7 +280,9 @@ void Reaction::removeReactant(const ID& id, const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -307,7 +319,9 @@ void Reaction::setReactants(const std::vector<ID>& ids, const SIDE side, const s
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -320,7 +334,9 @@ void Reaction::setReactants(const std::vector<ID>& ids, const SIDE side, const s
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 
@@ -415,7 +431,7 @@ COMPOUND_OR_FLASK Reaction::getReactantType(const ID& id) const {
   // clang-format on
   mongocxx::options::find options{};
   options.projection(document{} << "lhs" << 1 << "rhs" << 1 << finalize);
-  auto optional = _collection->mongocxx().find_one(selection.view());
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
   if (!optional)
     throw Exceptions::MissingIdOrField();
   auto view = optional.value().view();
@@ -454,7 +470,9 @@ void Reaction::clearReactants(const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto selection = document{} << "_id" << this->id().bsoncxx() << finalize;
@@ -467,7 +485,9 @@ void Reaction::clearReactants(const SIDE side) const {
                                << close_document
                              << finalize;
     // clang-format on
-    _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+    auto options = mongocxx::options::find_one_and_update();
+    options.projection(document{} << "_id" << 1 << finalize);
+    _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
   }
 }
 

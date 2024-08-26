@@ -9,7 +9,7 @@ import datetime
 import argparse
 
 
-parser = argparse.ArgumentParser(description='SCINE Database Update 1.1.X to 1.2.0.')
+parser = argparse.ArgumentParser(description='SCINE Database Update 1.2.X to 1.3.0.')
 parser.add_argument('--ip', dest='ip', type=str, default='localhost',
                     help='The database server IP or hostname. [default = localhost]')
 parser.add_argument('--port', dest='port', type=int, default=27017,
@@ -31,7 +31,7 @@ if "_db_meta_data" in db.list_collection_names():
     meta_data = db["_db_meta_data"].find_one({})
     assert meta_data
     version = meta_data["version"]
-    if version["major"] == 1 and version["minor"] == 1:
+    if version["major"] == 1 and version["minor"] == 2:
         is_correct_old_version = True
 else:
     is_correct_old_version = False
@@ -41,15 +41,12 @@ if not is_correct_old_version:
     print("Exiting!")
     exit(1)
 
-# Update content
-# Add restart information to calculations
-db["calculations"].update_many({}, {"$set": {"restart_information": {}}})
-
-# Add pressure to model
-db["calculations"].update_many({}, {"$set": {"model.pressure": "101325.0"}})
-db["properties"].update_many({}, {"$set": {"model.pressure": "101325.0"}})
-db["structures"].update_many({}, {"$set": {"model.pressure": "101325.0"}})
-
+# Check for model_transformation steps
+step = db["elementary_steps"].find_one({"type": "model_transformation"})
+if step is not None:
+    print("The database contains outdated elementary steps of type model_transformation.")
+    print("These steps must be removed manually before updating")
+    exit(1)
 
 # Update version
 if "_db_meta_data" in db.list_collection_names():
@@ -64,7 +61,7 @@ else:
 post = {
     "version": {
         "major": 1,
-        "minor": 2,
+        "minor": 3,
         "patch": 0
     },
     "_created": date

@@ -29,7 +29,8 @@ namespace Scine {
 namespace Database {
 namespace {
 
-ID createImpl(const std::vector<ID>& structures, const std::vector<ID>& compounds, const Flask::CollectionPtr& collection) {
+ID createImpl(const std::vector<ID>& structures, const std::vector<ID>& compounds,
+              const Flask::CollectionPtr& collection, bool explorationDisabled) {
   // Build arrays
   bsoncxx::builder::basic::array structureArray;
   for (const auto& id : structures) {
@@ -45,7 +46,7 @@ ID createImpl(const std::vector<ID>& structures, const std::vector<ID>& compound
   auto doc = document{} << "_created" << now
                         << "_lastmodified" << now
                         << "analysis_disabled" << false
-                        << "exploration_disabled" << false
+                        << "exploration_disabled" << explorationDisabled
                         << "_objecttype" << Flask::objecttype
                         << "structures" << structureArray
                         << "compounds" << compoundArray
@@ -60,20 +61,21 @@ ID createImpl(const std::vector<ID>& structures, const std::vector<ID>& compound
 
 constexpr const char* Flask::objecttype;
 
-Flask Flask::create(const std::vector<ID>& structures, const std::vector<ID>& compounds, const CollectionPtr& collection) {
+Flask Flask::create(const std::vector<ID>& structures, const std::vector<ID>& compounds,
+                    const CollectionPtr& collection, bool explorationDisabled) {
   if (!collection) {
     throw Exceptions::MissingCollectionException();
   }
 
-  return Flask{createImpl(structures, compounds, collection), collection};
+  return Flask{createImpl(structures, compounds, collection, explorationDisabled), collection};
 }
 
-ID Flask::create(const std::vector<ID>& structures, const std::vector<ID>& compounds) {
+ID Flask::create(const std::vector<ID>& structures, const std::vector<ID>& compounds, bool explorationDisabled) {
   if (!_collection) {
     throw Exceptions::MissingLinkedCollectionException();
   }
 
-  this->_id = std::make_unique<ID>(createImpl(structures, compounds, _collection));
+  this->_id = std::make_unique<ID>(createImpl(structures, compounds, _collection, explorationDisabled));
   return *this->_id;
 }
 
@@ -115,7 +117,9 @@ bool Flask::hasReaction(const ID& id) const {
                               << close_array
                               << finalize;
   // clang-format on
-  auto optional = _collection->mongocxx().find_one(selection.view());
+  auto options = mongocxx::options::find();
+  options.projection(document{} << "_id" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
   return static_cast<bool>(optional);
 }
 
@@ -132,7 +136,9 @@ void Flask::addReaction(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Flask::removeReaction(const ID& id) const {
@@ -148,7 +154,9 @@ void Flask::removeReaction(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 int Flask::hasReactions() const {
@@ -196,7 +204,9 @@ bool Flask::hasStructure(const ID& id) const {
                               << close_array
                               << finalize;
   // clang-format on
-  auto optional = _collection->mongocxx().find_one(selection.view());
+  auto options = mongocxx::options::find();
+  options.projection(document{} << "_id" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
   return static_cast<bool>(optional);
 }
 
@@ -213,7 +223,9 @@ void Flask::addStructure(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Flask::removeStructure(const ID& id) const {
@@ -229,7 +241,9 @@ void Flask::removeStructure(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 int Flask::hasStructures() const {
@@ -277,7 +291,9 @@ bool Flask::hasCompound(const ID& id) const {
                               << close_array
                               << finalize;
   // clang-format on
-  auto optional = _collection->mongocxx().find_one(selection.view());
+  auto options = mongocxx::options::find();
+  options.projection(document{} << "_id" << 1 << finalize);
+  auto optional = _collection->mongocxx().find_one(selection.view(), options);
   return static_cast<bool>(optional);
 }
 

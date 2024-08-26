@@ -33,7 +33,7 @@ def insert_concentration_for_structure(
         label: str = "start_concentration"):
     concentration_options = ["start_concentration", "max_concentration", "final_concentration", "concentration_flux",
                              "manual_activation"]
-    if label not in concentration_options and "_concentration_flux" not in label:
+    if label not in concentration_options and "_concentration_flux" not in label and "sensitivity" not in label:
         warn(f"Your concentration label is not within the suggested labels {str(concentration_options)}."
              f"This may lead to problems recognizing the concentrations in the individual gears!")
 

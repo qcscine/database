@@ -51,18 +51,20 @@ class Compound : public Object {
    *
    * @param collection The collection to generate the compound in
    * @param structures The initial list of structures in the compound.
+   * @param explorationDisabled Disable this Compound for further explorations.
    *
    * @throws MissingLinkedCollectionException If @p collection does not hold a collection
    * @returns The new Compound instance.
    */
-  static Compound create(const std::vector<ID>& structures, const CollectionPtr& collection);
+  static Compound create(const std::vector<ID>& structures, const CollectionPtr& collection, bool explorationDisabled = false);
   /**
    * @brief Creates a new Compound in the remote database.
    * @throws MissingLinkedCollectionException Thrown if no collection is linked.
    * @param structures The initial list of structures in the compound.
+   * @param explorationDisabled Disable this Compound for further explorations.
    * @return ID        The ID of the newly inserted Compound.
    */
-  ID create(const std::vector<ID>& structures);
+  ID create(const std::vector<ID>& structures, bool explorationDisabled = false);
   /**
    * @brief Get the centroid structure.
    *

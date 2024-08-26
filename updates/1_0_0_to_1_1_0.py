@@ -1,4 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+__copyright__ = """ This code is licensed under the 3-clause BSD license.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
+See LICENSE.txt for details.
+"""
 from pymongo import MongoClient
+from typing import Any, List, Dict
 from bson.objectid import ObjectId
 import datetime
 import argparse
@@ -20,13 +27,14 @@ port = args.port
 db_name = args.db_name
 extract_duplicates = args.duplicates
 
-client = MongoClient(ip, port)
+client: MongoClient = MongoClient(ip, port)
 db = client[db_name]
 
 # Check version
 is_correct_old_version = False
 if "_db_meta_data" in db.list_collection_names():
     meta_data = db["_db_meta_data"].find_one({})
+    assert meta_data
     version = meta_data["version"]
     if version["major"] == 1 and version["minor"] == 0:
         is_correct_old_version = True
@@ -44,6 +52,7 @@ if "flasks" not in db.list_collection_names():
     flasks = db["flasks"]
     flasks.create_index("flasks")
 # Add type to reactants of reaction
+reaction: Dict[str, List[Dict[str, Any]]]
 for reaction in db["reactions"].find():
     if len(reaction['lhs']) == 0 and len(reaction['rhs']) == 0:
         continue
@@ -53,7 +62,7 @@ for reaction in db["reactions"].find():
                 continue
     elif len(reaction['rhs']) != 0:
         if isinstance(reaction['rhs'][0], type(dict)):
-            if 'type' in reaction['rhs'][0]:
+            if 'type' in reaction['rhs'][0].keys():
                 continue
     lids = [lid for lid in reaction['lhs']]
     new_lhs = []
@@ -89,6 +98,7 @@ db["structures"].update_many({}, {"$set": {"calculations": {}}})
 if "_db_meta_data" in db.list_collection_names():
     _db_meta_data = db["_db_meta_data"]
     meta_data = db["_db_meta_data"].find_one({})
+    assert meta_data
     date = meta_data["_created"]
     db["_db_meta_data"].delete_many({})
 else:

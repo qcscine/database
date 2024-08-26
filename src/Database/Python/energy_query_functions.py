@@ -6,13 +6,15 @@ See LICENSE.txt for details.
 """
 
 # Standard library imports
-from typing import Union, Tuple, List, Optional
+from typing import Union, Tuple, List, Optional, TypeVar
 import math
 
 # Third party imports
 import numpy as np
 import scine_database as db
 import scine_utilities as utils
+# Type hint for float or numpy array
+float_or_ndarray = TypeVar('float_or_ndarray', float, np.ndarray)
 
 
 def get_elementary_step_with_min_ts_energy(reaction: db.Reaction,
@@ -62,13 +64,15 @@ def get_elementary_step_with_min_ts_energy(reaction: db.Reaction,
         es = db.ElementaryStep(es_id, elementary_steps)
         # # # Type check elementary step and break if barrierless
         if not es.has_transition_state():
-            first_structure_lhs = db.Structure(es.get_reactants()[0][0], structures)
-            if structure_model is not None and first_structure_lhs.get_model() != structure_model:
+            es_structures = [db.Structure(s_id, structures) for s_id in es.get_reactants()[0]] +\
+                            [db.Structure(s_id, structures) for s_id in es.get_reactants()[1]]
+            # # # Check all models of the structures
+            if structure_model is not None and\
+               any(es_struct.get_model() != structure_model for es_struct in es_structures):
                 continue
-            # # # Energy Check for minima
-            first_structure_lhs_energy = get_energy_for_structure(first_structure_lhs, energy_type, model,
-                                                                  structures, properties)
-            if first_structure_lhs_energy is None:
+            # # # Check all energies of the structures
+            if any(get_energy_for_structure(es_struct, energy_type, model, structures, properties) is None
+                   for es_struct in es_structures):
                 continue
             es_id_with_lowest_ts = es_id
             break
@@ -211,16 +215,16 @@ def get_energy_for_structure(structure: db.Structure, prop_name: str, model: db.
     return prop.get_data()
 
 
-def rate_constant_from_barrier(barrier: float, temperature: float) -> float:
+def rate_constant_from_barrier(barrier: float_or_ndarray, temperature: float) -> float_or_ndarray:
     """
     Calculate a rate constant from its energy [kJ / mol] and temperature according to transition state theory:
     rate-constant = k_B T / h exp[-barrier/(R T)]
 
     Parameters
     ----------
-    barrier :: float
+    barrier : float_or_ndarray
         The reaction barrier in kJ/mol.
-    temperature :: flaot
+    temperature : float
         The temperature in K.
 
     Returns
@@ -235,6 +239,29 @@ def rate_constant_from_barrier(barrier: float, temperature: float) -> float:
     return factor * np.exp(- beta_in_mol_per_j * barrier_j_per_mol)
 
 
+def barrier_from_rate_constant(rate_constant: float_or_ndarray, temperature: float) -> float_or_ndarray:
+    """
+    Calculate a barrier [J / mol] from a rate konstant [s^-1] and temperature [K] according to transition state theory:
+    barrier = log(rate-constant * h / (k_B * T)) * -1 * (R * T)
+
+    Parameters
+    ----------
+    rate_constant : float_or_ndarray
+        The rate constant in s^-1.
+    temperature : float
+        The temperature in K.
+
+    Returns
+    -------
+    The barrier in J/mol.
+    """
+    kbt_in_j = utils.BOLTZMANN_CONSTANT * temperature  # k_B T
+    factor = utils.PLANCK_CONSTANT / kbt_in_j  # h / k_B T
+    rt_in_j_per_mol = utils.MOLAR_GAS_CONSTANT * temperature  # R T
+
+    return -1.0 * rt_in_j_per_mol * np.log(rate_constant * factor)
+
+
 def get_all_energies_for_aggregate(aggregate: Union[db.Compound, db.Flask], model: db.Model, energy_label: str,
                                    structures: db.Collection, properties: db.Collection) -> List[Union[float, None]]:
     all_energies = []
@@ -246,6 +273,28 @@ def get_all_energies_for_aggregate(aggregate: Union[db.Compound, db.Flask], mode
 
 def get_min_energy_for_aggregate(aggregate: Union[db.Compound, db.Flask], model: db.Model, energy_label: str,
                                  structures: db.Collection, properties: db.Collection) -> Optional[float]:
+    """
+    Get the minimum energy for a given aggregate.
+
+    Parameters
+    ----------
+    aggregate : Union[db.Compound, db.Flask]
+        The aggregate for which to retrieve the minimum energy.
+    model : db.Model
+        The database model.
+    energy_label : str
+        The label of the energy property.
+    structures : db.Collection
+        The collection of structures.
+    properties : db.Collection
+        The collection of properties.
+
+    Returns
+    -------
+    Optional[float]
+        The minimum energy value for the aggregate,
+        or None if no energy values are available.
+    """
     all_energies = get_all_energies_for_aggregate(aggregate, model, energy_label, structures, properties)
     if len(all_energies) < 1:
         return None
@@ -261,6 +310,28 @@ def get_min_energy_for_aggregate(aggregate: Union[db.Compound, db.Flask], model:
 def get_min_free_energy_for_aggregate(aggregate: Union[db.Compound, db.Flask], electronic_model: db.Model,
                                       correction_model: db.Model, structures: db.Collection,
                                       properties: db.Collection) -> Optional[float]:
+    """
+    Calculate the minimum free energy for an aggregate.
+    The free energy correction can have a different model than the electronic model.
+
+    Parameters
+    ----------
+    aggregate : Union[db.Compound, db.Flask]
+        The aggregate for which to retrieve the minimum free energy.
+    electronic_model : db.Model
+        The electronic model used for energy calculations.
+    correction_model : db.Model
+        The correction model used for energy calculations.
+    structures : db.Collection
+        The collection of structures.
+    properties : db.Collection
+        The collection of properties.
+
+    Returns
+    -------
+    Optional[float]
+        The minimum free energy of the aggregate, or None if the energy calculation is not possible.
+    """
     equal_models = electronic_model == correction_model
     if equal_models:
         return get_min_energy_for_aggregate(aggregate, electronic_model, "gibbs_free_energy", structures, properties)

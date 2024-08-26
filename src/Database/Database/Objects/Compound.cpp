@@ -29,7 +29,7 @@ namespace Scine {
 namespace Database {
 namespace {
 
-ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& collection) {
+ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& collection, bool explorationDisabled) {
   // Build structure array
   bsoncxx::builder::basic::array structureArray;
   for (const auto& id : structures) {
@@ -41,7 +41,7 @@ ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& 
   auto doc = document{} << "_created" << now
                         << "_lastmodified" << now
                         << "analysis_disabled" << false
-                        << "exploration_disabled" << false
+                        << "exploration_disabled" << explorationDisabled
                         << "_objecttype" << Compound::objecttype
                         << "structures" << structureArray
                         << "reactions" << open_array << close_array
@@ -55,20 +55,20 @@ ID createImpl(const std::vector<ID>& structures, const Compound::CollectionPtr& 
 
 constexpr const char* Compound::objecttype;
 
-Compound Compound::create(const std::vector<ID>& structures, const CollectionPtr& collection) {
+Compound Compound::create(const std::vector<ID>& structures, const CollectionPtr& collection, bool explorationDisabled) {
   if (!collection) {
     throw Exceptions::MissingCollectionException();
   }
 
-  return Compound{createImpl(structures, collection), collection};
+  return Compound{createImpl(structures, collection, explorationDisabled), collection};
 }
 
-ID Compound::create(const std::vector<ID>& structures) {
+ID Compound::create(const std::vector<ID>& structures, bool explorationDisabled) {
   if (!_collection) {
     throw Exceptions::MissingLinkedCollectionException();
   }
 
-  this->_id = std::make_unique<ID>(createImpl(structures, _collection));
+  this->_id = std::make_unique<ID>(createImpl(structures, _collection, explorationDisabled));
   return *this->_id;
 }
 
@@ -112,7 +112,9 @@ void Compound::addReaction(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Compound::removeReaction(const ID& id) const {
@@ -128,7 +130,9 @@ void Compound::removeReaction(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 int Compound::hasReactions() const {
@@ -178,7 +182,9 @@ void Compound::addStructure(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 void Compound::removeStructure(const ID& id) const {
@@ -194,7 +200,9 @@ void Compound::removeStructure(const ID& id) const {
                              << close_document
                            << finalize;
   // clang-format on
-  _collection->mongocxx().find_one_and_update(selection.view(), update.view());
+  auto options = mongocxx::options::find_one_and_update();
+  options.projection(document{} << "_id" << 1 << finalize);
+  _collection->mongocxx().find_one_and_update(selection.view(), update.view(), options);
 }
 
 int Compound::hasStructures() const {

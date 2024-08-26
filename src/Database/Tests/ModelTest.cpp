@@ -186,11 +186,14 @@ TEST_F(ModelTest, EqualityWorks) {
   Model lhs("dft", "any", "none", "none");
   Model rhs("dft", "something", "", "none");
   ASSERT_TRUE(lhs == rhs);
+  ASSERT_TRUE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
   lhs.program = "sparrow";
   rhs.program = "Sparrow";
   ASSERT_TRUE(lhs == rhs);
+  ASSERT_TRUE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
   rhs.program = "something_different";
   ASSERT_FALSE(lhs == rhs);
+  ASSERT_FALSE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
   lhs.program = "any";
   rhs.program = "something";
   ASSERT_TRUE(lhs == rhs);
@@ -212,7 +215,9 @@ TEST_F(ModelTest, EqualityWorks) {
   lhs.periodicBoundaries = "any";
   rhs.periodicBoundaries = "ANY";
   ASSERT_TRUE(lhs == rhs);
+  ASSERT_TRUE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
   rhs.periodicBoundaries = "none";
+  ASSERT_TRUE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
   ASSERT_FALSE(lhs == rhs);
   rhs.periodicBoundaries = "8.0,10.0,10.0,45.0,90.0,90.0,xyz";
   ASSERT_TRUE(lhs == rhs);
@@ -220,8 +225,10 @@ TEST_F(ModelTest, EqualityWorks) {
   ASSERT_TRUE(lhs == rhs);
   rhs.periodicBoundaries = "8.00,10.0,10.0,45.0,90.0,90.00,xyz";
   ASSERT_TRUE(lhs == rhs);
+  ASSERT_TRUE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
   rhs.periodicBoundaries = "8.00,10.1,10.0,45.0,90.0,90.00,xyz";
   ASSERT_FALSE(lhs == rhs);
+  ASSERT_TRUE(lhs.equalWithoutPeriodicBoundaryCheck(rhs));
 }
 
 TEST_F(ModelTest, EntryNoneAndAnyChecksWork) {

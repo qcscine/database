@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+__copyright__ = """ This code is licensed under the 3-clause BSD license.
+Copyright ETH Zurich, Department of Chemistry and Applied Biosciences, Reiher Group.
+See LICENSE.txt for details.
+"""
 from pymongo import MongoClient
 import datetime
 import argparse
@@ -17,13 +23,14 @@ port = args.port
 db_name = args.db_name
 
 
-client = MongoClient(ip, port)
+client: MongoClient = MongoClient(ip, port)
 db = client[db_name]
 
 # Check version
 is_correct_old_version = False
 if "_db_meta_data" in db.list_collection_names():
     meta_data = db["_db_meta_data"].find_one({})
+    assert meta_data
     version = meta_data["version"]
     if version["major"] == 0 and version["minor"] == 0:
         is_correct_old_version = True
@@ -42,6 +49,7 @@ db["elementary_steps"].update_many({"type": {"$exists": False}}, {"$set": {"type
 if "_db_meta_data" in db.list_collection_names():
     _db_meta_data = db["_db_meta_data"]
     meta_data = db["_db_meta_data"].find_one({})
+    assert meta_data
     date = meta_data["_created"]
     db["_db_meta_data"].delete_many({})
 else:
