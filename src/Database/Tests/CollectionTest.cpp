@@ -10,6 +10,7 @@
 #include <Database/Objects/Compound.h>
 #include <Database/Objects/Structure.h>
 #include <gmock/gmock.h>
+#include <cstdint>
 
 using namespace testing;
 namespace Scine {

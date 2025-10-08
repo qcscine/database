@@ -153,7 +153,7 @@ Utils::AtomCollection Structure::getAtoms() const {
    */
   unsigned int iAtom = 0;
   for (const auto& atom : atomsView) {
-    const std::string symbol = atom["element"].get_utf8().value.to_string();
+    const std::string symbol = std::string(atom["element"].get_utf8().value);
     elements.push_back(Utils::ElementInfo::elementTypeForSymbol(symbol));
     coordinates(iAtom, 0) = atom["x"].get_double();
     coordinates(iAtom, 1) = atom["y"].get_double();
@@ -505,7 +505,7 @@ std::map<std::string, std::vector<ID>> Structure::getAllProperties() const {
     for (bsoncxx::array::element entry : array) {
       tmp.emplace_back(entry.get_oid().value);
     }
-    ret[ele.key().to_string()] = tmp;
+    ret[std::string(ele.key())] = tmp;
   }
   return ret;
 }
@@ -763,7 +763,7 @@ std::map<std::string, std::vector<ID>> Structure::getAllCalculations() const {
     for (bsoncxx::array::element entry : array) {
       tmp.emplace_back(entry.get_oid().value);
     }
-    ret[ele.key().to_string()] = tmp;
+    ret[std::string(ele.key())] = tmp;
   }
   return ret;
 }
@@ -831,7 +831,7 @@ std::string Structure::getGraph(const std::string& key) const {
   if (findIter == graphs.end()) {
     throw Exceptions::MissingIdOrField();
   }
-  return findIter->get_utf8().value.to_string();
+  return std::string(findIter->get_utf8().value);
 }
 
 void Structure::setGraph(const std::string& key, const std::string& graph) const {
@@ -898,7 +898,7 @@ std::map<std::string, std::string> Structure::getGraphs() const {
   auto doc = view["graphs"].get_document().view();
   std::map<std::string, std::string> ret;
   for (bsoncxx::document::element ele : doc) {
-    ret[ele.key().to_string()] = ele.get_utf8().value.to_string();
+    ret[std::string(ele.key())] = std::string(ele.get_utf8().value);
   }
   return ret;
 }

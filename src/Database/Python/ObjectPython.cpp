@@ -11,6 +11,7 @@
 #include <Database/Objects/Object.h>
 #include <Utils/Pybind.h>
 #include <pybind11/chrono.h>
+#include <string>
 
 using namespace Scine::Database;
 
@@ -53,6 +54,7 @@ void init_id(pybind11::module& m) {
   id.def(
       "__le__", [](const ID& a, const std::string& b) { return a.string() <= b; }, pybind11::is_operator());
   id.def("__repr__", [](const ID& id) { return "scine_database.ID('" + id.string() + "')"; });
+  id.def("__hash__", [](const ID& id) { return std::hash<std::string>{}(id.string()); });
   id.def(pybind11::pickle(
       [](const ID& id) { //__getstate__
         return id.string();

@@ -21,6 +21,7 @@
 #include "Database/Objects/VectorProperty.h"
 /* External Includes */
 #include <bsoncxx/builder/stream/document.hpp>
+#include <cstdint>
 #include <mongocxx/collection.hpp>
 
 using bsoncxx::builder::stream::close_array;
@@ -65,7 +66,7 @@ std::string Property::getPropertyName() const {
   auto view = optional.value().view();
   if (view["property_name"].type() != bsoncxx::types::b_utf8::type_id)
     throw Exceptions::MissingIdOrField();
-  return view["property_name"].get_utf8().value.to_string();
+  return std::string(view["property_name"].get_utf8().value);
 }
 
 void Property::setPropertyName(const std::string& name) const {

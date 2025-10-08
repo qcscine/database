@@ -1,6 +1,16 @@
 Changelog
 =========
 
+
+Release 1.5.0
+-------------
+
+Changes (DB schema changing)
+ - Add `excitation` as elementary step type (backwards compatible)
+
+Additions (backwards compatible):
+ - Update code to be GCC 13 compatible
+
 Release 1.4.0
 -------------
 

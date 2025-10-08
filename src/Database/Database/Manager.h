@@ -8,6 +8,7 @@
 #define DATABASE_MANAGER_H_
 
 /* External Includes */
+#include <array>
 #include <chrono>
 #include <memory>
 #include <stdexcept>

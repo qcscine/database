@@ -35,7 +35,7 @@ Model::Model(bsoncxx::document::view bson) {
 void Model::fromBson(bsoncxx::document::view bson) {
   auto settingsModelPairs = getSettingsModelPairs(); // necessary to call here because of pybind
   for (auto& settingModelPair : settingsModelPairs) {
-    settingModelPair.second.get() = bson[settingModelPair.first].get_utf8().value.to_string();
+    settingModelPair.second.get() = std::string(bson[settingModelPair.first].get_utf8().value);
   }
 }
 

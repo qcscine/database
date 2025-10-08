@@ -409,14 +409,14 @@ std::tuple<std::vector<COMPOUND_OR_FLASK>, std::vector<COMPOUND_OR_FLASK>> React
   if (side == SIDE::BOTH || side == SIDE::LHS) {
     auto array = view["lhs"].get_array().value;
     for (auto element : array) {
-      const std::string i = element["type"].get_utf8().value.to_string();
+      const std::string i = std::string(element["type"].get_utf8().value);
       lhs.push_back(EnumMaps::str2reactant.at(i));
     }
   }
   if (side == SIDE::BOTH || side == SIDE::RHS) {
     auto array = view["rhs"].get_array().value;
     for (auto element : array) {
-      const std::string i = element["type"].get_utf8().value.to_string();
+      const std::string i = std::string(element["type"].get_utf8().value);
       rhs.push_back(EnumMaps::str2reactant.at(i));
     }
   }
@@ -439,14 +439,14 @@ COMPOUND_OR_FLASK Reaction::getReactantType(const ID& id) const {
   auto lhs = view["lhs"].get_array().value;
   for (auto element : lhs) {
     if (element["id"].get_oid().value == id.bsoncxx()) {
-      type = element["type"].get_utf8().value.to_string();
+      type = std::string(element["type"].get_utf8().value);
       break;
     }
   }
   auto rhs = view["rhs"].get_array().value;
   for (auto element : rhs) {
     if (element["id"].get_oid().value == id.bsoncxx()) {
-      type = element["type"].get_utf8().value.to_string();
+      type = std::string(element["type"].get_utf8().value);
       break;
     }
   }

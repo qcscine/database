@@ -376,7 +376,7 @@ Utils::BSplines::TrajectorySpline ElementaryStep::getSpline() const {
   auto data = Serialization::Serializer<Eigen::MatrixXd>::deserialize(dataView);
   bsoncxx::array::view elementView = view["spline"]["elements"].get_array();
   for (const auto it : elementView) {
-    std::string symbol = it.get_utf8().value.to_string();
+    std::string symbol = std::string(it.get_utf8().value);
     elements.push_back(Utils::ElementInfo::elementTypeForSymbol(symbol));
   }
   return Utils::BSplines::TrajectorySpline(elements, knots, data, tsPosition);

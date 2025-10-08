@@ -216,7 +216,7 @@ void init_properties(pybind11::module& m) {
           throw Exceptions::IDNotFoundException();
         }
         auto doc = optional.value().view();
-        auto objecttype = doc["_objecttype"].get_utf8().value.to_string();
+        auto objecttype = std::string(doc["_objecttype"].get_utf8().value);
 
         if (objecttype != Property::objecttype) {
           throw Exceptions::ObjectTypeMismatchException();

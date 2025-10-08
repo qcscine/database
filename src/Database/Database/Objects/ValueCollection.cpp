@@ -156,7 +156,7 @@ Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValue
     return Utils::UniversalSettings::GenericValue::fromDouble(value.get_double());
   }
   if (type == bsoncxx::type::k_utf8) {
-    return Utils::UniversalSettings::GenericValue::fromString(value.get_utf8().value.to_string());
+    return Utils::UniversalSettings::GenericValue::fromString(std::string(value.get_utf8().value));
   }
   if (type == bsoncxx::type::k_document) {
     /* Possible types:
@@ -168,7 +168,7 @@ Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValue
     auto typeIterator = document.view().find("type");
     if (typeIterator != document.view().end()) {
       // Lists of things
-      const std::string typeString = typeIterator->get_utf8().value.to_string();
+      const std::string typeString = std::string(typeIterator->get_utf8().value);
       auto array = document.view()["list"].get_array();
       if (typeString == ListTypeHint<int>::value()) {
         std::vector<int> vs;
@@ -187,7 +187,7 @@ Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValue
       if (typeString == ListTypeHint<std::string>::value()) {
         std::vector<std::string> vs;
         for (const auto v : array.value) {
-          vs.push_back(v.get_utf8().value.to_string());
+          vs.push_back(std::string(v.get_utf8().value));
         }
         return Utils::UniversalSettings::GenericValue::fromStringList(std::move(vs));
       }
@@ -211,7 +211,7 @@ Utils::UniversalSettings::GenericValue GenericValue::deserialize(const BsonValue
     }
     if (document.view().find("selectedOption") != document.view().end()) {
       Utils::UniversalSettings::ParametrizedOptionValue option{
-          document.view()["selectedOption"].get_utf8().value.to_string(),
+          std::string(document.view()["selectedOption"].get_utf8().value),
           ValueCollection::deserialize(document.view()["optionSettings"].get_document())};
       return Utils::UniversalSettings::GenericValue::fromOptionWithSettings(std::move(option));
     }
@@ -236,7 +236,7 @@ Utils::UniversalSettings::ValueCollection ValueCollection::deserialize(const bso
   Utils::UniversalSettings::ValueCollection collection;
 
   for (const auto& element : document) {
-    collection.addGenericValue(element.key().to_string(), GenericValue::deserialize(element.get_value()));
+    collection.addGenericValue(std::string(element.key()), GenericValue::deserialize(element.get_value()));
   }
 
   return collection;

@@ -7,7 +7,7 @@ import importlib.util
 import os
 import sys
 from pathlib import Path
-from distutils import sysconfig
+import sysconfig
 
 expected_suffix = sysconfig.get_config_var("EXT_SUFFIX")
 expected_name = __name__ + expected_suffix

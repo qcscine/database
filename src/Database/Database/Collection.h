@@ -10,6 +10,7 @@
 /* External Includes */
 #include <boost/optional.hpp>
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <vector>
 

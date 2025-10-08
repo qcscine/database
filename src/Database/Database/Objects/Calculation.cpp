@@ -142,7 +142,7 @@ Calculation::Job Calculation::getJob() const {
   auto jobDoc = view["job"].get_document().view();
   // Populate
   Calculation::Job job("dummy");
-  job.order = jobDoc["order"].get_utf8().value.to_string();
+  job.order = std::string(jobDoc["order"].get_utf8().value);
   job.memory = jobDoc["memory"].get_double();
   job.cores = Fields::getInteger<int>(jobDoc, "cores");
   job.disk = jobDoc["disk"].get_double();
@@ -617,7 +617,7 @@ std::map<std::string, ID> Calculation::getAuxiliaries() const {
   std::map<std::string, ID> auxiliaries;
   auto auxiliariesDoc = view["auxiliaries"].get_document().view();
   for (bsoncxx::document::element ele : auxiliariesDoc) {
-    auxiliaries.emplace(ele.key().to_string(), ele.get_oid().value);
+    auxiliaries.emplace(std::string(ele.key()), ele.get_oid().value);
   }
   return auxiliaries;
 }
@@ -753,7 +753,7 @@ std::map<std::string, ID> Calculation::getRestartInformation() const {
   std::map<std::string, ID> restart_information;
   auto restart_informationDoc = view["restart_information"].get_document().view();
   for (bsoncxx::document::element ele : restart_informationDoc) {
-    restart_information.emplace(ele.key().to_string(), ele.get_oid().value);
+    restart_information.emplace(std::string(ele.key()), ele.get_oid().value);
   }
   return restart_information;
 }
